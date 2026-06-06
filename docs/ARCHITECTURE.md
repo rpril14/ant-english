@@ -49,6 +49,7 @@ Frontend talks to the .NET API over HTTP (SWR) and to Supabase directly for Auth
 | JWT verification | `Program.cs` → `AddJwtBearer`, Authority = Supabase URL |
 | Background jobs | `Program.cs` → `AddHangfire` + `AddHangfireServer` (in-process) |
 | Job dashboard | `/hangfire` (restrict to admin in production) |
+| Swagger UI | `/swagger` — JWT bearer auth via Authorize button (Development only) |
 | Health endpoint | `GET /health` → `{ status, timestamp }` |
 | Supabase client (FE) | `src/lib/supabase.ts` → `createClient` |
 
