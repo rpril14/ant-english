@@ -30,7 +30,7 @@ Positive:
 
 Tradeoffs:
 - Still requires Python on the server.
-- YouTube IP blocking affects both tools equally; workaround is the same (cookies file via `TranscriptService:CookiesFile` config).
+- YouTube IP blocking affects both tools equally; non-cloud hosting (Railway, Render, Fly.io) avoids this in practice.
 
 ## Follow-Up
 
