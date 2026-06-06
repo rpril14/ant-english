@@ -17,12 +17,12 @@ public class TranscriptService_test
     [Fact]
     public void ParseJson_ValidEntries_ReturnsMappedLines()
     {
-        // Arrange
+        // Arrange — CLI wraps entries in outer array [[...]]
         var json = """
-            [
+            [[
               {"text": "Hello world", "start": 1.0, "duration": 2.5},
               {"text": "How are you", "start": 4.0, "duration": 3.0}
-            ]
+            ]]
             """;
 
         // Act
@@ -41,9 +41,7 @@ public class TranscriptService_test
     public void ParseJson_HtmlEntities_Decoded()
     {
         // Arrange — youtube-transcript-api returns HTML-encoded text
-        var json = """
-            [{"text": "it&#39;s a &amp; b", "start": 0.0, "duration": 2.0}]
-            """;
+        var json = """[[{"text": "it&#39;s a &amp; b", "start": 0.0, "duration": 2.0}]]""";
 
         // Act
         var result = InvokeParseJson(json);
@@ -58,10 +56,10 @@ public class TranscriptService_test
     {
         // Arrange
         var json = """
-            [
+            [[
               {"text": "  ", "start": 0.0, "duration": 1.0},
               {"text": "Hello", "start": 1.0, "duration": 2.0}
-            ]
+            ]]
             """;
 
         // Act

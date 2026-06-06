@@ -13,20 +13,17 @@ public class TranscriptService(IConfiguration config, ILogger<TranscriptService>
     public async Task<IReadOnlyList<TranscriptLine>> GetTranscriptAsync(string youtubeId, CancellationToken ct = default)
     {
         var python = config["TranscriptService:PythonPath"] ?? "python";
-        var cookiesFile = config["TranscriptService:CookiesFile"];
 
         // Try English first, fall back to any available transcript
-        var json = await RunAsync(python, youtubeId, ["en", "en-US", "en-GB"], cookiesFile, ct)
-                ?? await RunAsync(python, youtubeId, [], cookiesFile, ct)
+        var json = await RunAsync(python, youtubeId, ["en", "en-US", "en-GB"], ct)
+                ?? await RunAsync(python, youtubeId, [], ct)
                 ?? throw new InvalidOperationException($"Could not retrieve transcript for {youtubeId}");
 
         return ParseJson(json);
     }
 
     private async Task<string?> RunAsync(
-        string python, string youtubeId,
-        string[] languages, string? cookiesFile,
-        CancellationToken ct)
+        string python, string youtubeId, string[] languages, CancellationToken ct)
     {
         var args = new List<string>
         {
@@ -39,12 +36,6 @@ public class TranscriptService(IConfiguration config, ILogger<TranscriptService>
         {
             args.Add("--languages");
             args.AddRange(languages);
-        }
-
-        if (!string.IsNullOrEmpty(cookiesFile))
-        {
-            args.Add("--cookies");
-            args.Add(cookiesFile);
         }
 
         var psi = new ProcessStartInfo
@@ -60,13 +51,16 @@ public class TranscriptService(IConfiguration config, ILogger<TranscriptService>
         using var process = Process.Start(psi)
             ?? throw new InvalidOperationException("Failed to start Python");
 
-        var stdout = await process.StandardOutput.ReadToEndAsync(ct);
+        var stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
+        var stderrTask = process.StandardError.ReadToEndAsync(ct);
         await process.WaitForExitAsync(ct);
+
+        var stdout = await stdoutTask;
+        var stderr = await stderrTask;
 
         if (process.ExitCode != 0)
         {
-            var err = await process.StandardError.ReadToEndAsync(ct);
-            logger.LogWarning("youtube-transcript-api failed (exit {Code}): {Error}", process.ExitCode, err);
+            logger.LogWarning("youtube-transcript-api failed (exit {Code}): {Error}", process.ExitCode, stderr);
             return null;
         }
 
@@ -75,8 +69,11 @@ public class TranscriptService(IConfiguration config, ILogger<TranscriptService>
 
     private static IReadOnlyList<TranscriptLine> ParseJson(string json)
     {
-        var entries = JsonSerializer.Deserialize<TranscriptEntry[]>(json)
+        // CLI returns [[{...}]] — outer array is per-video, inner array is entries
+        var outer = JsonSerializer.Deserialize<TranscriptEntry[][]>(json)
             ?? throw new InvalidOperationException("Empty transcript response");
+
+        var entries = outer.Length > 0 ? outer[0] : [];
 
         return entries
             .Where(e => !string.IsNullOrWhiteSpace(e.Text))
