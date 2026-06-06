@@ -7,8 +7,7 @@ namespace AntEnglish.Api.Jobs;
 
 public class CcImportJob(
     AntDbContext db,
-    IYtDlpService ytDlp,
-    ISrtParser parser,
+    ITranscriptService transcript,
     IDeepLService deepL,
     ILogger<CcImportJob> logger)
 {
@@ -18,50 +17,43 @@ public class CcImportJob(
             .Where(v => v.Id == videoId)
             .ExecuteUpdateAsync(s => s.SetProperty(v => v.TranscriptStatus, "processing"));
 
-        string? subtitleFile = null;
         try
         {
             var video = await db.Videos.FindAsync(videoId)
                 ?? throw new InvalidOperationException($"Video {videoId} not found");
 
-            // 1. Download subtitle
-            subtitleFile = await ytDlp.DownloadSubtitleAsync(video.YoutubeId);
+            // 1. Fetch transcript lines
+            var lines = await transcript.GetTranscriptAsync(video.YoutubeId);
+            if (lines.Count == 0)
+                throw new InvalidOperationException("No transcript lines returned");
 
-            // 2. Parse into sentences
-            var parsed = parser.Parse(subtitleFile);
-            if (parsed.Count == 0)
-                throw new InvalidOperationException("Subtitle file contained no parseable sentences");
-
-            // 3. Translate (degrades gracefully on quota exceeded)
+            // 2. Translate (degrades gracefully on quota exceeded)
             var translations = await deepL.TranslateBatchAsync(
-                parsed.Select(s => s.Text).ToList());
+                lines.Select(l => l.Text).ToList());
 
-            // 4. Bulk insert sentences
-            var sentences = parsed.Select((s, i) => new Sentence
+            // 3. Bulk insert sentences
+            var sentences = lines.Select((l, i) => new Sentence
             {
                 VideoId     = videoId,
                 Index       = i,
-                Text        = s.Text,
+                Text        = l.Text,
                 Translation = translations[i],
-                StartTimeMs = s.StartMs,
-                EndTimeMs   = s.EndMs
+                StartTimeMs = l.StartMs,
+                EndTimeMs   = l.EndMs
             }).ToList();
 
             await db.Sentences.AddRangeAsync(sentences);
 
-            // 5. Mark ready
+            // 4. Mark ready
             await db.Videos
                 .Where(v => v.Id == videoId)
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(v => v.TranscriptStatus, "ready")
-                    .SetProperty(v => v.SentenceCount, parsed.Count));
+                    .SetProperty(v => v.SentenceCount, lines.Count));
 
             await db.SaveChangesAsync();
 
-            logger.LogInformation("Import complete: {VideoId} — {Count} sentences", videoId, parsed.Count);
-
-            // 6. Broadcast via Supabase Realtime (frontend card update without page refresh)
-            await BroadcastReadyAsync(videoId);
+            logger.LogInformation("Import complete: {VideoId} — {Count} sentences", videoId, lines.Count);
         }
         catch (Exception ex)
         {
@@ -72,32 +64,7 @@ public class CcImportJob(
                 .ExecuteUpdateAsync(s => s.SetProperty(v => v.TranscriptStatus, "failed"));
 
             await db.SaveChangesAsync();
-            throw; // Hangfire will retry per its retry policy
-        }
-        finally
-        {
-            // Clean up temp subtitle file
-            if (subtitleFile is not null && File.Exists(subtitleFile))
-                File.Delete(subtitleFile);
-        }
-    }
-
-    private async Task BroadcastReadyAsync(Guid videoId)
-    {
-        // Supabase Realtime broadcast via REST API
-        // Frontend useVideoReady hook listens on channel video:{videoId}
-        try
-        {
-            var supabaseUrl = db.Database.GetConnectionString(); // placeholder
-            // Real broadcast is done via supabase-js on the frontend subscription;
-            // the DB status change to "ready" is what triggers the poll/realtime update.
-            // For a proper server-side broadcast, use Supabase REST broadcast API.
-            await Task.CompletedTask;
-        }
-        catch (Exception ex)
-        {
-            // Non-fatal — frontend polling fallback handles this case
-            logger.LogWarning(ex, "Supabase broadcast failed for {VideoId} — frontend will poll", videoId);
+            throw;
         }
     }
 }

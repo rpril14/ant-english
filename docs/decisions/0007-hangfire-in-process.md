@@ -8,7 +8,7 @@ Accepted
 
 ## Context
 
-Background jobs (CC download, SRT parse, DeepL translate) need a reliable queue with retries and a dashboard. The question is whether to run Hangfire in the same ASP.NET Core process as the API or in a separate Worker project.
+Background jobs (transcript fetch via youtube-transcript-api, DeepL translate) need a reliable queue with retries and a dashboard. The question is whether to run Hangfire in the same ASP.NET Core process as the API or in a separate Worker project.
 
 ## Decision
 

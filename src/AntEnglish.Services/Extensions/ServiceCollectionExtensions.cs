@@ -9,8 +9,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddAntEnglishServices(this IServiceCollection services)
     {
         services.AddScoped<IYouTubeService, YouTubeService>();
-        services.AddScoped<IYtDlpService, YtDlpService>();
-        services.AddSingleton<ISrtParser, SrtParser>();
+        services.AddScoped<ITranscriptService, TranscriptService>();
         services.AddScoped<IDeepLService, DeepLService>();
         return services;
     }
