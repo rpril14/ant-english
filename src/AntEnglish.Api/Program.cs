@@ -1,4 +1,5 @@
 using AntEnglish.Data;
+using AntEnglish.Services.Extensions;
 using FluentValidation;
 using Hangfire;
 using Hangfire.InMemory;
@@ -38,6 +39,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddAntEnglishServices();
 
 builder.Services.AddHangfire(config =>
     config.UseInMemoryStorage());
