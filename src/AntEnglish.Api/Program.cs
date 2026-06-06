@@ -64,6 +64,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         // .NET fetches the JWKS automatically — no secret needed in config
         options.Authority = $"{supabaseUrl}/auth/v1";
         options.Audience = "authenticated";
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
         options.TokenValidationParameters.ValidateIssuerSigningKey = true;
         options.TokenValidationParameters.ValidIssuer = $"{supabaseUrl}/auth/v1";
     });
@@ -79,10 +80,9 @@ builder.Services.AddHangfireServer();
 
 var app = builder.Build();
 
+app.UseCors();
 app.UseSwagger();
 app.UseSwaggerUI();
-
-app.UseCors();
 app.UseSentryTracing();
 app.UseAuthentication();
 app.UseAuthorization();

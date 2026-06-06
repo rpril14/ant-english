@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
     <ProjectReference Include="..\AntEnglish.Services\AntEnglish.Services.csproj" />
@@ -23,6 +23,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InternalsVisibleTo>AntEnglish.Tests</InternalsVisibleTo>
+    <UserSecretsId>234d08f1-1851-43a5-b1e2-b14a6abc5646</UserSecretsId>
   </PropertyGroup>
 
 </Project>
