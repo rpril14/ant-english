@@ -17,6 +17,7 @@ obj/
 *.user
 *.suo
 .vs/
+appsettings.Development.json
 
 # Node / Next.js
 node_modules/
