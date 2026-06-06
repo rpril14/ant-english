@@ -2,7 +2,7 @@
 
 **Epic:** E04 — Auth  
 **Lane:** high-risk  
-**Status:** planned  
+**Status:** implemented  
 **Product doc:** [docs/product/auth.md](../../../product/auth.md)
 
 ## Story
@@ -42,3 +42,10 @@ As Alex, I want to sign in with Google and have my library and progress tied to 
 ## Proof Status
 
 unit: no | integration: no | e2e: no | platform: no
+
+## Implementation Notes
+
+- `/auth/callback` route exchanges OAuth code for session via `exchangeCodeForSession`
+- Middleware protects all routes except `/`, `/login`, `/auth/*`; redirects unauthenticated users to `/login?next=<path>`
+- RLS policies confirmed on all tables: user-scoped tables (`user_videos`, `user_progress`, `saved_sentences`) enforce `auth.uid() = user_id`; shared tables (`videos`, `sentences`) allow authenticated read
+- API uses direct Postgres connection (service role) — bypasses RLS correctly; `user_id` always sourced from verified JWT `sub` claim
