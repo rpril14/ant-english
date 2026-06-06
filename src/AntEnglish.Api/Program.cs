@@ -92,3 +92,5 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = Dat
 app.UseHangfireDashboard("/hangfire");
 
 app.Run();
+
+public partial class Program { }
