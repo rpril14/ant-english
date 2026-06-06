@@ -34,5 +34,4 @@ Tradeoffs:
 
 ## Follow-Up
 
-- For deployments on blocked IPs: configure `TranscriptService:CookiesFile` with a Netscape-format cookies export from a logged-in browser.
 - Phase 2: if auto-generated captions are low quality, add a quality score or Whisper fallback (US-201).
