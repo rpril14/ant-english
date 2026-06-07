@@ -220,6 +220,9 @@ public class TestAuthHandler(
 {
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        if (!Request.Headers.ContainsKey("Authorization"))
+            return Task.FromResult(AuthenticateResult.NoResult());
+
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, "00000000-0000-0000-0000-000000000001"),

@@ -11,6 +11,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IYouTubeService, YouTubeService>();
         services.AddScoped<ITranscriptService, TranscriptService>();
         services.AddScoped<IDeepLService, DeepLService>();
+        services.AddSingleton<IMatchingService, MatchingService>();
         return services;
     }
 }

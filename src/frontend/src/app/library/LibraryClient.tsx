@@ -57,7 +57,8 @@ export function LibraryClient({ initialVideos, apiBase }: Props) {
             return (
               <li
                 key={video.id}
-                className="flex items-center gap-4 rounded-lg border border-gray-200 p-3"
+                onClick={() => video.transcript_status === 'ready' && router.push(`/practice/${video.id}`)}
+                className={`flex items-center gap-4 rounded-lg border border-gray-200 p-3 ${video.transcript_status === 'ready' ? 'cursor-pointer hover:bg-gray-50' : ''}`}
               >
                 {video.thumbnail_url && (
                   <img
