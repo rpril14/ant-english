@@ -2,7 +2,7 @@
 
 **Epic:** E02 — Practice  
 **Lane:** normal  
-**Status:** planned  
+**Status:** implemented  
 **Product doc:** [docs/product/translation.md](../../../product/translation.md)
 
 ## Story
@@ -33,4 +33,4 @@ As Tom, I want to see a translation of each sentence in my native language, so t
 
 ## Proof Status
 
-unit: no | integration: no | e2e: no | platform: no
+unit: yes | integration: no | e2e: no | platform: no

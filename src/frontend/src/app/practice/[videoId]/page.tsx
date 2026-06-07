@@ -21,7 +21,7 @@ export default async function PracticePage({ params }: Props) {
 
   const { data: sentences } = await supabase
     .from('sentences')
-    .select('id, index, text, named_entities, start_time_ms, end_time_ms')
+    .select('id, index, text, translation, named_entities, start_time_ms, end_time_ms')
     .eq('video_id', params.videoId)
     .order('index')
 
@@ -54,6 +54,7 @@ export interface Sentence {
   id: string
   index: number
   text: string
+  translation: string | null
   named_entities: string[]
   start_time_ms: number
   end_time_ms: number

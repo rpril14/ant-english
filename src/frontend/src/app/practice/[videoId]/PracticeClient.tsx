@@ -2,6 +2,7 @@
 
 import { match, isComplete, applyScoreCap } from '@/lib/matching'
 import { deriveSidebar } from '@/lib/sidebar'
+import { getTranslationVisible, setTranslationVisible } from '@/lib/prefs'
 import { createClient } from '@/lib/supabase/client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactPlayer from 'react-player'
@@ -32,6 +33,20 @@ export function PracticeClient({
   const [progress, setProgress] = useState<Record<string, ProgressRow>>(initialProgress)
 
   // Hint state — resets on sentence change
+  const [showTranslation, setShowTranslation] = useState(true)
+
+  // Initialise from localStorage after mount (avoid SSR mismatch)
+  useEffect(() => {
+    setShowTranslation(getTranslationVisible())
+  }, [])
+
+  function toggleTranslation() {
+    setShowTranslation(prev => {
+      setTranslationVisible(!prev)
+      return !prev
+    })
+  }
+
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set())
   const [firstLetterIndices, setFirstLetterIndices] = useState<Set<number>>(new Set())
   const [hintLevel, setHintLevel] = useState(0)
@@ -334,6 +349,13 @@ export function PracticeClient({
         className="w-full rounded-xl border border-gray-600 bg-gray-800 px-4 py-3 text-base text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none disabled:opacity-50"
       />
 
+      {/* Translation (AC-104-1, AC-104-2, AC-104-3) */}
+      {showTranslation && sentence && (
+        <p className="text-sm text-gray-500 italic">
+          {sentence.translation ?? 'Translation not available'}
+        </p>
+      )}
+
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-2">
         <button
@@ -365,15 +387,24 @@ export function PracticeClient({
           {isLast && sentenceCompleted ? 'Done' : 'Next →'}
         </button>
 
-        <label className="ml-auto flex items-center gap-2 text-sm text-gray-400 select-none cursor-pointer">
-          <input
-            type="checkbox"
-            checked={autoNext}
-            onChange={e => setAutoNext(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-600 bg-gray-700 accent-blue-500"
-          />
-          Auto Next
-        </label>
+        <div className="ml-auto flex items-center gap-3">
+          <button
+            onClick={toggleTranslation}
+            className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
+          >
+            {showTranslation ? 'Hide translation' : 'Show translation'}
+          </button>
+
+          <label className="flex items-center gap-2 text-sm text-gray-400 select-none cursor-pointer">
+            <input
+              type="checkbox"
+              checked={autoNext}
+              onChange={e => setAutoNext(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-600 bg-gray-700 accent-blue-500"
+            />
+            Auto Next
+          </label>
+        </div>
       </div>
     </div>
     </main>

@@ -25,7 +25,7 @@
 | --- | --- | --- | --- | --- | --- |
 | US-102 | Practice dictation on a sentence | ✅ implemented | ✅ | ✅ | — |
 | US-103 | Use hints when stuck | ✅ implemented | ✅ | — | — |
-| US-104 | View translation | planned | — | — | — |
+| US-104 | View translation | ✅ implemented | ✅ | — | — |
 | US-108 | Transcript sidebar navigation | ✅ implemented | ✅ | — | — |
 
 ---
