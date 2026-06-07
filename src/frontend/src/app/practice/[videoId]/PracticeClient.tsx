@@ -201,7 +201,8 @@ export function PracticeClient({
     // optimistic
     setSavedIds(prev => {
       const next = new Set(prev)
-      isSaved ? next.delete(sentenceId) : next.add(sentenceId)
+      if (isSaved) next.delete(sentenceId)
+      else next.add(sentenceId)
       return next
     })
     clearTimeout(saveToastTimer.current)
@@ -228,7 +229,8 @@ export function PracticeClient({
       // revert on failure
       setSavedIds(prev => {
         const next = new Set(prev)
-        isSaved ? next.add(sentenceId) : next.delete(sentenceId)
+        if (isSaved) next.add(sentenceId)
+        else next.delete(sentenceId)
         return next
       })
     }
