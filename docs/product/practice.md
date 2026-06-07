@@ -4,19 +4,32 @@ Covers US-102, US-103, US-108.
 
 ## Practice Loop
 
-1. Video player syncs to `sentence[i].start_time_ms` as playback advances.
-2. Learner types what they hear in the dictation input.
-3. Word diff updates within 50 ms per keystroke.
-4. At ≥ 95% match: sentence auto-completes, `user_progress` upserted.
-5. Below 95%: learner presses Enter or clicks Next to manually advance.
+1. Player seeks to `sentence[i].start_time_ms` and plays.
+2. Player reaches `sentence[i].end_time_ms` → **pauses automatically**.
+3. Learner types what they heard in the dictation input.
+4. Word diff updates within 50 ms per keystroke.
+5. At ≥ 95% match (Auto Next ON): sentence auto-completes, `user_progress` upserted, player seeks to next sentence and plays.
+6. Below 95% or Auto Next OFF: learner presses Enter or clicks Next to advance manually.
 
 ## Word Matching
 
-- Normalisation: lowercase, smart-apostrophe → `'`, strip punctuation except `'`, split on spaces.
-- LCS-based word diff.
+- Normalisation: lowercase, smart-apostrophe → straight apostrophe, strip all punctuation (including apostrophes), split on spaces.
+- Positional word diff (word at input position `i` compared to reference word `i`).
 - Proper names (from `sentences.named_entities`) excluded from scoreable words.
 - If all words are proper names: match% = 100.
 - `input = "im here to learn english"` matches `"I'm here to learn English."` at 100%.
+
+## Word Chip States
+
+Each reference word is shown as a chip. Chip states update in real-time as the learner types:
+
+| State | Colour | Content |
+|---|---|---|
+| Pending (not yet reached) | Gray | Dots — one dot per letter in the word |
+| Active, prefix correct | Yellow | Typed letters + dots for remaining letters |
+| Active, wrong letter | Red | Typed letters + dots for remaining letters |
+| Completed correct (space pressed) | Green | Reference word |
+| Completed wrong (space pressed) | Red | Reference word |
 
 ## Hint System
 
@@ -46,10 +59,10 @@ Covers US-102, US-103, US-108.
 | First letter hint | Alt+H |
 | Reveal word | Alt+R |
 
-## Auto-Advance
+## Auto Next
 
-- Toggle ON: session advances automatically when player reaches `sentence[i+1].start_time_ms`.
-- Toggle OFF: waits for manual advance regardless of playback.
+- Toggle ON: when match reaches ≥ 95%, session advances automatically without requiring Enter/Next.
+- Toggle OFF: always waits for manual Enter or Next press, regardless of match score.
 
 ## Progress Persistence
 

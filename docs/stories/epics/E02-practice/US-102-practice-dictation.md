@@ -2,7 +2,7 @@
 
 **Epic:** E02 — Practice  
 **Lane:** high-risk  
-**Status:** planned  
+**Status:** implemented  
 **Product doc:** [docs/product/practice.md](../../../product/practice.md)
 
 ## Story
@@ -11,13 +11,18 @@ As Alex, I want to type what I hear sentence by sentence and see which words I g
 
 ## Acceptance Criteria
 
-**AC-102-1 — Player syncs to current sentence**
-- Player `currentTime` reaches `sentence[i].start_time_ms` → sentence `i` becomes active
-- Transcript sidebar scrolls to highlight sentence `i`
+**AC-102-1 — Player pauses at sentence boundary**
+- Player seeks to `sentence[i].start_time_ms` and plays
+- Player reaches `sentence[i].end_time_ms` → pauses automatically so learner can type
+- Transcript sidebar scrolls to highlight sentence `i` (US-108)
 
-**AC-102-2 — Real-time word matching**
-- Word diff updates within 50 ms per keystroke
-- Correct words: green chips; incorrect: red chips; missing: gray placeholder chips
+**AC-102-2 — Real-time word chip feedback**
+- Chips update within 50 ms per keystroke
+- Pending words: gray chips with one dot per letter
+- Active word (typing in progress, prefix correct): yellow chip with typed letters + dots for remaining
+- Active word (wrong letter typed): red chip with typed letters + dots for remaining
+- Completed correct word: green chip showing the word
+- Completed wrong word: red chip showing the word
 
 **AC-102-3 — Normalisation**
 - `"im here to learn english"` matches `"I'm here to learn English."` at 100%
@@ -31,9 +36,9 @@ As Alex, I want to type what I hear sentence by sentence and see which words I g
 **AC-102-6 — Replay sentence**
 - Ctrl+R → seeks to `sentence[i].start_time_ms`; input preserved
 
-**AC-102-7 — Auto-advance toggle**
-- ON: auto-advance at `sentence[i+1].start_time_ms`
-- OFF: wait for manual advance
+**AC-102-7 — Auto Next toggle**
+- ON: when match reaches ≥ 95%, auto-advance without Enter/Next
+- OFF: always wait for manual advance regardless of score
 
 **AC-102-8 — Progress persists on refresh**
 - Resumes at first incomplete sentence; completed sentences show saved scores
@@ -46,10 +51,10 @@ As Alex, I want to type what I hear sentence by sentence and see which words I g
 
 ## Validation
 
-- Unit: normalisation rules, LCS matching, score calculation, proper-name exclusion
+- Unit: normalisation rules, positional word diff, score calculation, proper-name exclusion
 - Integration: progress upsert → read-back; resume-on-refresh
 - E2E: full dictation session, completion, refresh-resume
 
 ## Proof Status
 
-unit: no | integration: no | e2e: no | platform: no
+unit: yes | integration: yes | e2e: no | platform: no
