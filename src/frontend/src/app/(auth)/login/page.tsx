@@ -6,7 +6,7 @@ import { Suspense } from 'react'
 
 function LoginForm() {
   const searchParams = useSearchParams()
-  const next = searchParams.get('next') ?? '/dashboard'
+  const next = searchParams.get('next') ?? '/library'
 
   async function handleGoogleSignIn() {
     const supabase = createClient()

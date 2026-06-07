@@ -348,6 +348,12 @@ export function LibraryClient({ initialVideos, apiBase }: Props) {
     return session?.access_token ?? ''
   }
 
+  async function handleSignOut() {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+
   function handlePlay(videoId: string) {
     router.push(`/practice/${videoId}`)
   }
@@ -424,7 +430,22 @@ export function LibraryClient({ initialVideos, apiBase }: Props) {
               </div>
             </div>
             <div style={{ flex: '1 1 auto' }} />
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <button
+                onClick={handleSignOut}
+                style={{
+                  height: 38, padding: '0 14px',
+                  borderRadius: 11,
+                  border: `1px solid ${T.lineSoft}`,
+                  background: 'transparent',
+                  color: T.text3,
+                  fontFamily: 'inherit', fontSize: 13.5, fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.16s ease',
+                }}
+              >
+                Đăng xuất
+              </button>
               {FILTERS.map(f => (
                 <button
                   key={f.id}
