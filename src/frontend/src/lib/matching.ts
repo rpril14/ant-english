@@ -87,10 +87,10 @@ export function match(input: string, reference: string, namedEntities: string[])
       }
       if (ref.startsWith(activeTyped)) {
         // Correct prefix, more letters to go
-        return { display, typed: activeTyped, status: 'active', dotCount: ref.length - activeTyped.length }
+        return { display, typed: activeTyped, status: 'active', dotCount: Math.max(0, ref.length - activeTyped.length) }
       }
       // Wrong letter
-      return { display, typed: activeTyped, status: 'incorrect', dotCount: ref.length - activeTyped.length }
+      return { display, typed: activeTyped, status: 'incorrect', dotCount: Math.max(0, ref.length - activeTyped.length) }
     }
 
     // Not yet reached
