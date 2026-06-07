@@ -1,14 +1,11 @@
 using AntEnglish.Api.Extensions;
+using AntEnglish.Api.Helpers;
 using AntEnglish.Api.Jobs;
-using AntEnglish.Data;
-using AntEnglish.Data.Entities;
 using AntEnglish.Services.Interfaces;
 using FluentValidation;
 using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
 
 namespace AntEnglish.Api.Controllers;
 
@@ -20,19 +17,16 @@ public class ImportRequestValidator : AbstractValidator<ImportRequest>
     {
         RuleFor(x => x.Url)
             .NotEmpty()
-            .Must(BeValidYouTubeUrl)
+            .Must(url => YouTubeHelper.ExtractVideoId(url) is not null)
             .WithMessage("Invalid URL — please paste a YouTube link");
     }
-
-    private static bool BeValidYouTubeUrl(string url) =>
-        YouTubeHelper.ExtractVideoId(url) is not null;
 }
 
 [ApiController]
 [Route("api/videos")]
 [Authorize]
 public class ImportController(
-    AntDbContext db,
+    IVideoImportService importService,
     IYouTubeService youtube,
     IBackgroundJobClient jobs,
     IValidator<ImportRequest> validator) : ControllerBase
@@ -44,25 +38,22 @@ public class ImportController(
         if (!validation.IsValid)
             return BadRequest(new { message = validation.Errors[0].ErrorMessage });
 
-        var videoId = YouTubeHelper.ExtractVideoId(req.Url)!;
+        var youtubeId = YouTubeHelper.ExtractVideoId(req.Url)!;
         var userId = User.GetUserId();
 
-        // Duplicate check
-        var existing = await db.Videos.FirstOrDefaultAsync(v => v.YoutubeId == videoId);
-
+        var existing = await importService.FindExistingAsync(youtubeId);
         if (existing is not null)
         {
             if (existing.TranscriptStatus == "ready")
             {
-                await LinkVideoToUserAsync(userId, existing.Id);
+                await importService.EnsureUserLinkAsync(userId, existing.Id);
                 return Ok(new { videoId = existing.Id, status = "ready" });
             }
             if (existing.TranscriptStatus is "queued" or "processing")
                 return Ok(new { jobId = existing.Id, status = existing.TranscriptStatus });
         }
 
-        // Fetch YouTube metadata + CC check
-        var meta = await youtube.GetVideoMetaAsync(videoId);
+        var meta = await youtube.GetVideoMetaAsync(youtubeId);
         if (meta is null)
             return NotFound(new { message = "Video not found or has been removed" });
         if (!meta.IsPublic)
@@ -70,55 +61,11 @@ public class ImportController(
         if (!meta.HasEnglishCc)
             return BadRequest(new { message = "This video has no English captions — Phase 1 only supports CC-enabled videos" });
 
-        // Create video record + link to user + enqueue job
-        var video = new Video
-        {
-            YoutubeId        = videoId,
-            Title            = meta.Title,
-            ThumbnailUrl     = meta.ThumbnailUrl,
-            DurationSeconds  = meta.DurationSeconds,
-            CcType           = meta.CcType,
-            TranscriptStatus = "queued"
-        };
+        var videoId = await importService.CreateAndLinkAsync(
+            userId, youtubeId, meta.Title, meta.ThumbnailUrl, meta.DurationSeconds, meta.CcType);
 
-        await db.Videos.AddAsync(video);
-        await LinkVideoToUserAsync(userId, video.Id, video);
-        await db.SaveChangesAsync();
+        jobs.Enqueue<CcImportJob>(j => j.RunAsync(videoId));
 
-        jobs.Enqueue<CcImportJob>(j => j.RunAsync(video.Id));
-
-        return Ok(new { jobId = video.Id, status = "queued" });
-    }
-
-    private async Task LinkVideoToUserAsync(Guid userId, Guid videoId, Video? newVideo = null)
-    {
-        var exists = await db.UserVideos.AnyAsync(uv => uv.UserId == userId && uv.VideoId == videoId);
-        if (exists) return;
-
-        var uv = new UserVideo { UserId = userId, VideoId = videoId };
-        if (newVideo is not null)
-            uv.VideoId = newVideo.Id;
-
-        await db.UserVideos.AddAsync(uv);
-    }
-}
-
-public static class YouTubeHelper
-{
-    private static readonly Regex[] Patterns =
-    [
-        new(@"youtu\.be/([a-zA-Z0-9_-]{11})", RegexOptions.Compiled),
-        new(@"youtube\.com/watch\?.*v=([a-zA-Z0-9_-]{11})", RegexOptions.Compiled),
-        new(@"youtube\.com/shorts/([a-zA-Z0-9_-]{11})", RegexOptions.Compiled),
-    ];
-
-    public static string? ExtractVideoId(string url)
-    {
-        foreach (var pattern in Patterns)
-        {
-            var m = pattern.Match(url);
-            if (m.Success) return m.Groups[1].Value;
-        }
-        return null;
+        return Ok(new { jobId = videoId, status = "queued" });
     }
 }

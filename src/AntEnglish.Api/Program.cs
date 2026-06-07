@@ -1,10 +1,8 @@
-using AntEnglish.Data;
 using AntEnglish.Services.Extensions;
 using FluentValidation;
 using Hangfire;
 using Hangfire.InMemory;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,11 +46,8 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.AddDbContext<AntDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        npgsql => npgsql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
-    .UseSnakeCaseNamingConvention());
+builder.Services.AddAntEnglishData(
+    builder.Configuration.GetConnectionString("DefaultConnection")!);
 
 var supabaseUrl = builder.Configuration["Supabase:Url"]
     ?? throw new InvalidOperationException("Supabase:Url is required");

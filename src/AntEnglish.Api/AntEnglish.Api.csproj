@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AntEnglish.Services\AntEnglish.Services.csproj" />
-    <ProjectReference Include="..\AntEnglish.Data\AntEnglish.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>

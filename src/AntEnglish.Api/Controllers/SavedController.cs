@@ -1,9 +1,7 @@
 using AntEnglish.Api.Extensions;
-using AntEnglish.Data;
-using AntEnglish.Data.Entities;
+using AntEnglish.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace AntEnglish.Api.Controllers;
 
@@ -12,78 +10,33 @@ public record UpsertNoteRequest(string? Note);
 [ApiController]
 [Route("api/saved")]
 [Authorize]
-public class SavedController(AntDbContext db) : ControllerBase
+public class SavedController(ISavedService saved) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetSaved()
     {
-        var userId = User.GetUserId();
-        var items = await db.SavedSentences
-            .Where(ss => ss.UserId == userId)
-            .OrderByDescending(ss => ss.SavedAt)
-            .Select(ss => new
-            {
-                SentenceId = ss.SentenceId,
-                Text       = ss.Sentence.Text,
-                Translation = ss.Sentence.Translation,
-                VideoTitle  = ss.Sentence.Video.Title,
-                VideoId     = ss.Sentence.VideoId,
-                Note        = ss.Note,
-                SavedAt     = ss.SavedAt,
-            })
-            .ToListAsync();
-
+        var items = await saved.GetSavedAsync(User.GetUserId());
         return Ok(items);
     }
 
     [HttpPost]
     public async Task<IActionResult> Save([FromBody] Guid sentenceId)
     {
-        var userId = User.GetUserId();
-        var exists = await db.SavedSentences
-            .AnyAsync(ss => ss.UserId == userId && ss.SentenceId == sentenceId);
-
-        if (exists) return Conflict();
-
-        db.SavedSentences.Add(new SavedSentence
-        {
-            UserId     = userId,
-            SentenceId = sentenceId,
-            SavedAt    = DateTimeOffset.UtcNow,
-            NextReviewAt = DateTimeOffset.UtcNow,
-        });
-        await db.SaveChangesAsync();
-
+        if (!await saved.SaveAsync(User.GetUserId(), sentenceId)) return Conflict();
         return Created(string.Empty, null);
     }
 
     [HttpDelete("{sentenceId:guid}")]
     public async Task<IActionResult> Remove(Guid sentenceId)
     {
-        var userId = User.GetUserId();
-        var row = await db.SavedSentences
-            .FirstOrDefaultAsync(ss => ss.UserId == userId && ss.SentenceId == sentenceId);
-
-        if (row is null) return NotFound();
-
-        db.SavedSentences.Remove(row);
-        await db.SaveChangesAsync();
-
+        if (!await saved.RemoveAsync(User.GetUserId(), sentenceId)) return NotFound();
         return NoContent();
     }
 
     [HttpPatch("{sentenceId:guid}/note")]
     public async Task<IActionResult> UpdateNote(Guid sentenceId, [FromBody] UpsertNoteRequest req)
     {
-        var userId = User.GetUserId();
-        var row = await db.SavedSentences
-            .FirstOrDefaultAsync(ss => ss.UserId == userId && ss.SentenceId == sentenceId);
-
-        if (row is null) return NotFound();
-
-        row.Note = req.Note;
-        await db.SaveChangesAsync();
-
-        return Ok(new { row.Note });
+        if (!await saved.UpdateNoteAsync(User.GetUserId(), sentenceId, req.Note)) return NotFound();
+        return Ok(new { note = req.Note });
     }
 }

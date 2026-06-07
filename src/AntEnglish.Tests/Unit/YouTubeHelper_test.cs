@@ -1,4 +1,4 @@
-using AntEnglish.Api.Controllers;
+using AntEnglish.Api.Helpers;
 
 namespace AntEnglish.Tests.Unit;
 
