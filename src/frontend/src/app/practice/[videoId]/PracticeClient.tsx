@@ -59,7 +59,6 @@ export function PracticeClient({
   const playerRef = useRef<HTMLVideoElement>(null)
   const hasPausedRef = useRef(false)
   const isInitialMount = useRef(true)
-  const pauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const sentence = sentences[currentIdx]
   const result = sentence ? match(input, sentence.text, sentence.named_entities) : null
@@ -68,24 +67,7 @@ export function PracticeClient({
   // advance() and jumpTo() handle seek+play directly; re-seeking here would
   // interrupt playback without resuming it.
 
-  const schedulePause = useCallback((endMs: number) => {
-    if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current)
-    const el = playerRef.current
-    if (!el) return
-    const remaining = endMs - el.currentTime * 1000
-    if (remaining <= 0) {
-      el.pause()
-      hasPausedRef.current = true
-      return
-    }
-    pauseTimeoutRef.current = setTimeout(() => {
-      playerRef.current?.pause()
-      hasPausedRef.current = true
-    }, remaining)
-  }, [])
-
   useEffect(() => {
-    if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current)
     hasPausedRef.current = false
     setRevealedIndices(new Set())
     setFirstLetterIndices(new Set())
@@ -140,11 +122,10 @@ export function PracticeClient({
       if (playerRef.current) {
         playerRef.current.currentTime = sentences[nextIdx].start_time_ms / 1000
         playerRef.current.play()
-        schedulePause(sentences[nextIdx].end_time_ms)
       }
     }
     saveProgress(sentence.id, score, completed, hintLevel)
-  }, [sentence, currentIdx, sentences, saveProgress, hintLevel, schedulePause])
+  }, [sentence, currentIdx, sentences, saveProgress, hintLevel])
 
   // ── Hint functions (AC-103-1, AC-103-2, AC-103-3) ────────────────────────
 
@@ -168,9 +149,8 @@ export function PracticeClient({
     if (playerRef.current) {
       playerRef.current.currentTime = sentences[idx].start_time_ms / 1000
       playerRef.current.play()
-      schedulePause(sentences[idx].end_time_ms)
     }
-  }, [sentences, schedulePause])
+  }, [sentences])
 
   function revealChip(idx: number) {
     setRevealedIndices(prev => new Set(Array.from(prev).concat(idx)))
@@ -202,12 +182,9 @@ export function PracticeClient({
   // ── User-initiated play: treat as replay when paused at sentence end ───────
 
   function handlePlay() {
-    if (!sentence || !playerRef.current) return
-    if (hasPausedRef.current) {
-      hasPausedRef.current = false
-      playerRef.current.currentTime = sentence.start_time_ms / 1000
-    }
-    schedulePause(sentence.end_time_ms)
+    if (!hasPausedRef.current || !playerRef.current || !sentence) return
+    hasPausedRef.current = false
+    playerRef.current.currentTime = sentence.start_time_ms / 1000
   }
 
   // ── Replay (AC-102-6) ─────────────────────────────────────────────────────
@@ -217,8 +194,7 @@ export function PracticeClient({
     hasPausedRef.current = false
     playerRef.current.currentTime = sentence.start_time_ms / 1000
     playerRef.current.play()
-    schedulePause(sentence.end_time_ms)
-  }, [sentence, schedulePause])
+  }, [sentence])
 
   const toggleSave = useCallback(async (sentenceId: string) => {
     const isSaved = savedIds.has(sentenceId)

@@ -75,20 +75,12 @@ public class TranscriptService(IConfiguration config, ILogger<TranscriptService>
 
         var entries = outer.Length > 0 ? outer[0] : [];
 
-        var filtered = entries
+        return entries
             .Where(e => !string.IsNullOrWhiteSpace(e.Text))
-            .ToList();
-
-        return filtered
-            .Select((e, i) =>
-            {
-                var rawEndMs   = (int)((e.Start + e.Duration) * 1000);
-                var nextStartMs = i + 1 < filtered.Count ? (int)(filtered[i + 1].Start * 1000) : rawEndMs;
-                return new TranscriptLine(
-                    Text: HttpUtility.HtmlDecode(e.Text).Trim(),
-                    StartMs: (int)(e.Start * 1000),
-                    EndMs: Math.Min(rawEndMs, nextStartMs));
-            })
+            .Select(e => new TranscriptLine(
+                Text: HttpUtility.HtmlDecode(e.Text).Trim(),
+                StartMs: (int)(e.Start * 1000),
+                EndMs: (int)((e.Start + e.Duration) * 1000)))
             .ToList();
     }
 

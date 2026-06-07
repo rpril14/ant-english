@@ -70,27 +70,6 @@ public class TranscriptService_test
         Assert.Equal("Hello", result[0].Text);
     }
 
-    [Fact]
-    public void ParseJson_EndOverlapsNextStart_CapsEndAtNextStart()
-    {
-        // Arrange — first entry's raw end (2.0 + 2.0 = 4.0s = 4000ms) exceeds
-        // next entry's start (3.5s = 3500ms), simulating YouTube CC timing bleed
-        var json = """
-            [[
-              {"text": "Hello world", "start": 2.0, "duration": 2.0},
-              {"text": "How are you", "start": 3.5, "duration": 1.0}
-            ]]
-            """;
-
-        // Act
-        var result = InvokeParseJson(json);
-
-        // Assert
-        Assert.Equal(2, result.Count);
-        Assert.Equal(3500, result[0].EndMs);  // capped at next start, not raw 4000
-        Assert.Equal(4500, result[1].EndMs);  // last line unaffected
-    }
-
     // ParseJson is private — invoke via reflection for unit testing
     private static IReadOnlyList<AntEnglish.Services.Interfaces.TranscriptLine> InvokeParseJson(string json)
     {
