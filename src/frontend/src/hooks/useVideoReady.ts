@@ -16,21 +16,6 @@ export function useVideoReady(jobId: string | null, apiBase: string) {
 
   const isTerminal = (s: JobStatus) => s === 'ready' || s === 'failed'
 
-  const poll = async () => {
-    if (!jobId) return
-    try {
-      const res = await fetch(`${apiBase}/api/jobs/${jobId}/status`, {
-        credentials: 'include',
-      })
-      if (!res.ok) return
-      const data: { jobId: string; status: JobStatus } = await res.json()
-      setStatus(data.status)
-      if (isTerminal(data.status)) stopPolling()
-    } catch {
-      // network error — keep polling
-    }
-  }
-
   const stopPolling = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
@@ -41,10 +26,25 @@ export function useVideoReady(jobId: string | null, apiBase: string) {
   useEffect(() => {
     if (!jobId) return
 
+    const supabase = createClient()
+
+    const poll = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const res = await fetch(`${apiBase}/api/jobs/${jobId}/status`, {
+          headers: { Authorization: `Bearer ${session?.access_token ?? ''}` },
+        })
+        if (!res.ok) return
+        const data: { jobId: string; status: JobStatus } = await res.json()
+        setStatus(data.status)
+        if (isTerminal(data.status)) stopPolling()
+      } catch {
+        // network error — keep polling
+      }
+    }
+
     poll()
     intervalRef.current = setInterval(poll, 3000)
-
-    const supabase = createClient()
     const channel = supabase
       .channel(`video:${jobId}`)
       .on(
