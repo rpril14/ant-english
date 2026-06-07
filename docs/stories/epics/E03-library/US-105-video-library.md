@@ -2,7 +2,7 @@
 
 **Epic:** E03 — Library  
 **Lane:** normal  
-**Status:** planned  
+**Status:** implemented  
 **Product doc:** [docs/product/library.md](../../../product/library.md)
 
 ## Story
@@ -42,4 +42,4 @@ As Alex, I want to see all my saved videos, track progress, and filter by status
 
 ## Proof Status
 
-unit: no | integration: no | e2e: no | platform: no
+unit: yes | integration: no | e2e: no | platform: no

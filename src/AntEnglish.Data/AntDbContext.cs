@@ -37,6 +37,7 @@ public class AntDbContext(DbContextOptions<AntDbContext> options) : DbContext(op
 
         modelBuilder.Entity<UserProgress>(e =>
         {
+            e.ToTable("user_progress");
             e.HasIndex(up => new { up.UserId, up.SentenceId }).IsUnique();
             e.Property(up => up.Attempts).HasDefaultValue(0);
             e.Property(up => up.HintLevelUsed).HasDefaultValue(0);
