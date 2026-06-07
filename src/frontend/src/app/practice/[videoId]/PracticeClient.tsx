@@ -300,13 +300,16 @@ export function PracticeClient({
           if (chip.status === 'correct') {
             return <span key={i} className="rounded-lg px-3 py-1 text-sm font-medium bg-green-500 text-white">{chip.display}</span>
           }
-          if (chip.status === 'incorrect' && chip.dotCount === 0) {
-            return <span key={i} className="rounded-lg px-3 py-1 text-sm font-medium bg-red-500 text-white">{chip.display}</span>
-          }
-          if (chip.status === 'active' || (chip.status === 'incorrect' && chip.dotCount > 0)) {
-            const bg = chip.status === 'active' ? 'bg-yellow-400 text-gray-900' : 'bg-red-500/40 text-red-300'
+          if (chip.status === 'incorrect') {
             return (
-              <span key={i} className={`rounded-lg px-3 py-1 text-sm font-medium ${bg}`}>
+              <span key={i} className="rounded-lg px-3 py-1 text-sm font-medium bg-red-500/40 text-red-300">
+                {chip.typed}<span className="opacity-40">{DOT.repeat(chip.dotCount)}</span>
+              </span>
+            )
+          }
+          if (chip.status === 'active') {
+            return (
+              <span key={i} className="rounded-lg px-3 py-1 text-sm font-medium bg-yellow-400 text-gray-900">
                 {chip.typed}<span className="opacity-40">{DOT.repeat(chip.dotCount)}</span>
               </span>
             )
