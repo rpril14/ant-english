@@ -2,7 +2,7 @@
 
 **Epic:** E02 — Practice  
 **Lane:** normal  
-**Status:** planned  
+**Status:** implemented  
 **Product doc:** [docs/product/practice.md](../../../product/practice.md)
 
 ## Story
@@ -12,22 +12,19 @@ As Tom, I want to get a small hint without seeing the full answer, so that I can
 ## Acceptance Criteria
 
 **AC-103-1 — First letter hint (Alt+H)**
-- Each unrevealed word shows first letter as chip (e.g. `H___` for "Hello")
+- Each press of Alt+H or "1st letter" button reveals the first letter of the next pending word (one word per press)
+- Chip shows `H···` format (first letter + dots for remaining letters)
 - `hint_level = 1` recorded
 
-**AC-103-2 — Reveal next word (Alt+R)**
-- Next unrevealed word shown fully in chip row
+**AC-103-2 — Click chip to reveal word**
+- Clicking a pending chip reveals that specific word in full (blue chip)
 - Input field not modified; `hint_level = 2` recorded
 
-**AC-103-3 — Show all words**
-- All words shown as chips
-- Score capped at 60%; notice: `"Score capped at 60% — answer revealed"`
+**AC-103-3 — Proper names not penalised**
+- Proper names show as separate orange chips below the input
+- Skipping them does not reduce match%
 
-**AC-103-4 — Proper names not penalised**
-- Proper name shows as separate orange chip below input
-- Skipping it does not reduce match%
-
-**AC-103-5 — No hint = full score**
+**AC-103-4 — No hint = full score**
 - Without any hint, score can reach 100%
 
 ## Risk Flags
@@ -36,9 +33,9 @@ As Tom, I want to get a small hint without seeing the full answer, so that I can
 
 ## Validation
 
-- Unit: hint level state machine, score cap logic
+- Unit: score cap logic (`applyScoreCap`), proper-name exclusion, `isComplete` threshold
 - Integration: hint + progress save; proper-name chip rendering
 
 ## Proof Status
 
-unit: no | integration: no | e2e: no | platform: no
+unit: yes | integration: no | e2e: no | platform: no

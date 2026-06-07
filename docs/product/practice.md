@@ -36,11 +36,12 @@ Each reference word is shown as a chip. Chip states update in real-time as the l
 | Level | Trigger | Effect | Score cap |
 |---|---|---|---|
 | 0 | No hint | Full score available | 100% |
-| 1 | Alt+H / "1st letter" | Each unrevealed word shows first letter | None |
-| 2 | Alt+R / "Reveal word" | Next unrevealed word shown fully | None |
-| 3 | "Show all" | All words shown | 60% |
+| 1 | Alt+H / "1st letter" button | Reveals first letter of next pending word (one word per press) | None |
+| 2 | Click a pending chip | Reveals that specific word in full | None |
 
 `hint_level_used` stored in `user_progress`.
+
+Hints are additive: level 2 does not reset level 1 hints already shown.
 
 ## Transcript Sidebar (US-108)
 
