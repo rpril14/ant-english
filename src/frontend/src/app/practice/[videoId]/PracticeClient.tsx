@@ -197,7 +197,7 @@ export function PracticeClient({
     <div className="flex h-screen overflow-hidden bg-gray-900 text-gray-100">
 
       {/* ── Sidebar (AC-108-1, AC-108-3) ──────────────────────────────────── */}
-      <aside className="w-64 shrink-0 border-r border-gray-700 flex flex-col">
+      <aside className="w-80 shrink-0 border-r border-gray-700 flex flex-col">
 
         {/* Progress header (AC-108-3) */}
         <div className="p-4 border-b border-gray-700">
@@ -223,7 +223,9 @@ export function PracticeClient({
               {item.state === 'completed' ? (
                 <span className="flex-1 text-xs text-gray-300 line-clamp-2">{item.text}</span>
               ) : (
-                <span className="flex-1 text-xs text-gray-600 select-none">***</span>
+                <span className="flex-1 text-xs text-gray-600 select-none tracking-wide">
+                  {item.text.trim().split(/\s+/).map(w => '*'.repeat(w.replace(/[^a-zA-Z0-9]/g, '').length || 1)).join(' ')}
+                </span>
               )}
               {item.state === 'completed' && (
                 <span className="shrink-0 text-green-400 text-xs">✓</span>
