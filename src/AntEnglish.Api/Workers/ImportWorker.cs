@@ -18,28 +18,36 @@ public class ImportWorker(IServiceScopeFactory scopeFactory, ILogger<ImportWorke
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            using var scope = scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AntDbContext>();
-
-            var pending = await db.Videos
-                .Where(v => v.TranscriptStatus == "queued")
-                .OrderBy(v => v.CreatedAt)
-                .Select(v => v.Id)
-                .Take(BatchSize)
-                .ToListAsync(stoppingToken);
-
-            var newJobs = pending.Where(id => !_inFlight.ContainsKey(id)).ToList();
-
-            if (newJobs.Count == 0)
+            try
             {
-                await Task.Delay(PollIntervalMs, stoppingToken);
-                continue;
+                using var scope = scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<AntDbContext>();
+
+                var pending = await db.Videos
+                    .Where(v => v.TranscriptStatus == "queued")
+                    .OrderBy(v => v.CreatedAt)
+                    .Select(v => v.Id)
+                    .Take(BatchSize)
+                    .ToListAsync(stoppingToken);
+
+                var newJobs = pending.Where(id => !_inFlight.ContainsKey(id)).ToList();
+
+                if (newJobs.Count == 0)
+                {
+                    await Task.Delay(PollIntervalMs, stoppingToken);
+                    continue;
+                }
+
+                foreach (var videoId in newJobs)
+                {
+                    if (_inFlight.TryAdd(videoId, true))
+                        _ = ProcessAsync(videoId, stoppingToken);
+                }
             }
-
-            foreach (var videoId in newJobs)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                if (_inFlight.TryAdd(videoId, true))
-                    _ = ProcessAsync(videoId, stoppingToken);
+                logger.LogError(ex, "ImportWorker poll error — retrying in {Delay}ms", PollIntervalMs);
+                await Task.Delay(PollIntervalMs, stoppingToken);
             }
         }
     }
