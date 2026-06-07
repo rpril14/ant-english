@@ -43,3 +43,7 @@ As Alex, I want to see all my saved videos, track progress, and filter by status
 ## Proof Status
 
 unit: yes | integration: no | e2e: no | platform: no
+
+## Evidence
+
+- 2026-06-07: Fixed `GET /api/library` runtime failure by ordering `user_videos` before projecting to `LibraryItem`; `dotnet test src\AntEnglish.sln` passed 42/42.

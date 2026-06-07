@@ -9,6 +9,7 @@ public class LibraryService(AntDbContext db) : ILibraryService
     public Task<List<LibraryItem>> GetLibraryAsync(Guid userId) =>
         db.UserVideos
             .Where(uv => uv.UserId == userId)
+            .OrderByDescending(uv => uv.AddedAt)
             .Select(uv => new LibraryItem(
                 uv.VideoId,
                 uv.Video.Title,
@@ -24,7 +25,6 @@ public class LibraryService(AntDbContext db) : ILibraryService
                 uv.CustomTags,
                 uv.AddedAt,
                 uv.LastStudiedAt))
-            .OrderByDescending(x => x.AddedAt)
             .ToListAsync();
 
     public async Task<bool?> ToggleFavoriteAsync(Guid userId, Guid videoId)

@@ -53,11 +53,11 @@ public class VideoImportService(
         return video.Id;
     }
 
-    public async Task<(Guid Id, string TranscriptStatus)?> GetJobStatusAsync(Guid jobId)
+    public async Task<(Guid Id, string TranscriptStatus)?> GetJobStatusAsync(Guid userId, Guid jobId)
     {
-        var video = await db.Videos
-            .Where(v => v.Id == jobId)
-            .Select(v => new { v.Id, v.TranscriptStatus })
+        var video = await db.UserVideos
+            .Where(uv => uv.UserId == userId && uv.VideoId == jobId)
+            .Select(uv => new { uv.Video.Id, uv.Video.TranscriptStatus })
             .FirstOrDefaultAsync();
 
         return video is null ? null : (video.Id, video.TranscriptStatus);

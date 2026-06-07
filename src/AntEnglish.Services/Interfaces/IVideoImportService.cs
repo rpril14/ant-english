@@ -8,5 +8,5 @@ public interface IVideoImportService
     Task EnsureUserLinkAsync(Guid userId, Guid videoId);
     Task<Guid> CreateAndLinkAsync(Guid userId, string youtubeId, string title, string? thumbnailUrl, int? durationSeconds, string? ccType);
     Task ProcessImportAsync(Guid videoId);
-    Task<(Guid Id, string TranscriptStatus)?> GetJobStatusAsync(Guid jobId);
+    Task<(Guid Id, string TranscriptStatus)?> GetJobStatusAsync(Guid userId, Guid jobId);
 }

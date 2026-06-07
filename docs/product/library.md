@@ -48,3 +48,4 @@ Filter pills: All, In progress, Completed, Favourites, custom tags.
 - Frontend subscribes to Supabase Realtime channel `video:{job_id}`.
 - On `video_ready` event: card transitions from `processing` → `ready` without page refresh.
 - Fallback: 3 s poll of `GET /api/jobs/{id}/status` if WebSocket disconnects.
+- If a user imports a video while another user's import is already queued or processing, the existing job is linked into the current user's library.

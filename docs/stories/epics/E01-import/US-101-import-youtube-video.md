@@ -2,7 +2,7 @@
 
 **Epic:** E01 — Import  
 **Lane:** high-risk  
-**Status:** planned  
+**Status:** implemented  
 **Product doc:** [docs/product/import.md](../../../product/import.md)
 
 ## Story
@@ -27,6 +27,7 @@ As Alex, I want to paste a YouTube URL and have it ready to practice in seconds,
 
 **AC-101-5 — Duplicate video handled**
 - Same `youtube_id` with `transcript_status = ready` → returns `{ status: "ready", video_id }` immediately
+- Same `youtube_id` with `transcript_status = queued | processing` → links the current user to the existing video and returns `{ status, job_id }`
 
 **AC-101-6 — Card appears instantly**
 - Card in `"Processing…"` state within 200 ms of submit
@@ -35,6 +36,7 @@ As Alex, I want to paste a YouTube URL and have it ready to practice in seconds,
 **AC-101-7 — Card updates when ready**
 - Card transitions to `"Start practicing"` without page refresh
 - Import-to-ready < 5 s for CC video
+- Polling `GET /api/jobs/{job_id}/status` returns status only for jobs linked to the authenticated user's library
 
 **AC-101-8 — Background job failure**
 - After 3 Hangfire retries: card shows `"Import failed"` + retry button
@@ -45,13 +47,18 @@ As Alex, I want to paste a YouTube URL and have it ready to practice in seconds,
 - External systems (YouTube Data API v3, yt-dlp, DeepL, Hangfire)
 - Data model (creates `videos`, `sentences`, `user_videos` rows)
 - Public contracts (`POST /api/videos/import` response shape)
+- Authorization (`GET /api/jobs/{job_id}/status` is scoped to `user_videos`)
 
 ## Validation
 
 - Unit: URL extraction, duplicate-check logic, error mapping
-- Integration: YouTube API mock → CC check; yt-dlp → sentence parse; DeepL degradation
+- Integration: YouTube API mock → CC check; duplicate queued link; job status ownership; yt-dlp → sentence parse; DeepL degradation
 - E2E: paste URL → card transitions from queued → processing → ready
 
 ## Proof Status
 
-unit: no | integration: no | e2e: no | platform: no
+unit: yes | integration: yes | e2e: no | platform: no
+
+## Evidence
+
+- 2026-06-07: Added integration coverage for duplicate queued imports linking the current user and unowned job status returning 404.

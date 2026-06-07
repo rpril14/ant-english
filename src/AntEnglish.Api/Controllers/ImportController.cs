@@ -50,7 +50,10 @@ public class ImportController(
                 return Ok(new { videoId = existing.Id, status = "ready" });
             }
             if (existing.TranscriptStatus is "queued" or "processing")
+            {
+                await importService.EnsureUserLinkAsync(userId, existing.Id);
                 return Ok(new { jobId = existing.Id, status = existing.TranscriptStatus });
+            }
         }
 
         var meta = await youtube.GetVideoMetaAsync(youtubeId);

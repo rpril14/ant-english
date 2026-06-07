@@ -10,7 +10,7 @@ Covers US-101. Phase 1 only — CC-enabled YouTube videos.
 - Videos with no English CC return `400` in Phase 1.
 - Private or deleted videos return `404` / `403`.
 - Duplicate `youtube_id` with `transcript_status = ready` returns immediately; no reprocessing.
-- Duplicate `youtube_id` in `queued` / `processing` state returns current status.
+- Duplicate `youtube_id` in `queued` / `processing` state links the current user to the existing import and returns current status.
 
 ## Background Job (CcImportJob)
 
@@ -36,6 +36,7 @@ Covers US-101. Phase 1 only — CC-enabled YouTube videos.
 ## Realtime Fallback
 
 Frontend polls `GET /api/jobs/{id}/status` every 3 s if Supabase Realtime disconnects.
+The API returns status only when the authenticated user has a `user_videos` link for that job/video.
 Max polling: 5 min, then manual refresh prompt.
 
 ## Error Messages

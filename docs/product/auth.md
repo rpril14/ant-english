@@ -28,3 +28,4 @@ No user can read or write rows belonging to another user. Shared `videos` and `s
 - All API endpoints except public health check require a valid Supabase JWT.
 - The .NET API verifies JWTs using Supabase's JWKS endpoint.
 - `user_id` is always taken from the verified JWT, never from request body.
+- Job status polling is scoped through `user_videos`; users can poll only import jobs linked to their own library.

@@ -1,3 +1,4 @@
+using AntEnglish.Api.Extensions;
 using AntEnglish.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,7 +14,7 @@ public class JobsController(IVideoImportService importService) : ControllerBase
     [HttpGet("{jobId:guid}/status")]
     public async Task<IActionResult> GetStatus(Guid jobId)
     {
-        var result = await importService.GetJobStatusAsync(jobId);
+        var result = await importService.GetJobStatusAsync(User.GetUserId(), jobId);
         if (result is null) return NotFound();
         return Ok(new { jobId = result.Value.Id, status = result.Value.TranscriptStatus });
     }
