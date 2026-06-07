@@ -2,7 +2,7 @@
 
 **Epic:** E02 — Practice  
 **Lane:** normal  
-**Status:** planned  
+**Status:** implemented  
 **Product doc:** [docs/product/practice.md](../../../product/practice.md)
 
 ## Story
@@ -32,4 +32,4 @@ As Sara, I want to see all sentences in a sidebar and jump to any one, so that I
 
 ## Proof Status
 
-unit: no | integration: no | e2e: no | platform: no
+unit: yes | integration: no | e2e: no | platform: no

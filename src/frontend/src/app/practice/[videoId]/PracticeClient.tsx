@@ -1,6 +1,7 @@
 'use client'
 
 import { match, isComplete, applyScoreCap } from '@/lib/matching'
+import { deriveSidebar } from '@/lib/sidebar'
 import { createClient } from '@/lib/supabase/client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactPlayer from 'react-player'
@@ -110,6 +111,18 @@ export function PracticeClient({
     }
   }
 
+  // ── Jump to sentence (AC-108-2) ───────────────────────────────────────────
+
+  const jumpTo = useCallback((idx: number) => {
+    setCurrentIdx(idx)
+    setInput('')
+    hasPausedRef.current = false
+    if (playerRef.current) {
+      playerRef.current.currentTime = sentences[idx].start_time_ms / 1000
+      playerRef.current.play()
+    }
+  }, [sentences])
+
   function revealChip(idx: number) {
     setRevealedIndices(prev => new Set(Array.from(prev).concat(idx)))
     setHintLevel(prev => Math.max(prev, 2))
@@ -176,12 +189,57 @@ export function PracticeClient({
   const isLast = currentIdx === sentences.length - 1
   const effectiveScore = result ? applyScoreCap(result.score, hintLevel) : 0
 
+  const sidebarItems = deriveSidebar(sentences, sentence?.id ?? '', progress)
+  const completedCount = sidebarItems.filter(i => i.state === 'completed').length
+  const pct = Math.round((completedCount / sentences.length) * 100)
+
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-6">
+    <div className="flex h-screen overflow-hidden bg-gray-900 text-gray-100">
+
+      {/* ── Sidebar (AC-108-1, AC-108-3) ──────────────────────────────────── */}
+      <aside className="w-64 shrink-0 border-r border-gray-700 flex flex-col">
+
+        {/* Progress header (AC-108-3) */}
+        <div className="p-4 border-b border-gray-700">
+          <p className="text-sm font-medium text-gray-300">
+            {completedCount} / {sentences.length}
+          </p>
+          <div className="mt-2 h-1.5 w-full rounded-full bg-gray-700">
+            <div className="h-full rounded-full bg-blue-500 transition-all" style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+
+        {/* Sentence list */}
+        <div className="flex-1 overflow-y-auto">
+          {sidebarItems.map((item, idx) => (
+            <button
+              key={item.id}
+              onClick={() => jumpTo(idx)}
+              className={`w-full flex items-start gap-2 px-3 py-2.5 text-left border-b border-gray-800 hover:bg-gray-800 transition-colors ${
+                item.state === 'current' ? 'bg-gray-800' : ''
+              }`}
+            >
+              <span className="shrink-0 mt-0.5 text-xs text-gray-500 w-6">#{item.index + 1}</span>
+              {item.state === 'unseen' ? (
+                <span className="flex-1 text-xs blur-sm select-none text-gray-400">•••</span>
+              ) : (
+                <span className="flex-1 text-xs text-gray-300 line-clamp-2">{item.text}</span>
+              )}
+              {item.state === 'completed' && (
+                <span className="shrink-0 text-green-400 text-xs">✓</span>
+              )}
+            </button>
+          ))}
+        </div>
+      </aside>
+
+      {/* ── Practice area ──────────────────────────────────────────────────── */}
+      <main className="flex-1 overflow-y-auto">
+      <div className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-6">
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="truncate text-base font-semibold text-gray-100">{video.title}</h1>
+        <h1 className="truncate text-base font-semibold">{video.title}</h1>
         <span className="shrink-0 text-sm text-gray-400">
           {currentIdx + 1} / {sentences.length}
         </span>
@@ -315,6 +373,8 @@ export function PracticeClient({
           Auto Next
         </label>
       </div>
+    </div>
+    </main>
     </div>
   )
 }
