@@ -32,7 +32,7 @@ export function PracticeClient({
 
   // Hint state — resets on sentence change
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set())
-  const [firstLetterHint, setFirstLetterHint] = useState(false)
+  const [firstLetterIndices, setFirstLetterIndices] = useState<Set<number>>(new Set())
   const [hintLevel, setHintLevel] = useState(0)
 
   const playerRef = useRef<HTMLVideoElement>(null)
@@ -46,7 +46,7 @@ export function PracticeClient({
   useEffect(() => {
     hasPausedRef.current = false
     setRevealedIndices(new Set())
-    setFirstLetterHint(false)
+    setFirstLetterIndices(new Set())
     setHintLevel(0)
     if (playerRef.current && sentence) {
       playerRef.current.currentTime = sentence.start_time_ms / 1000
@@ -100,8 +100,14 @@ export function PracticeClient({
   // ── Hint functions (AC-103-1, AC-103-2, AC-103-3) ────────────────────────
 
   function activateFirstLetter() {
-    setFirstLetterHint(true)
-    setHintLevel(prev => Math.max(prev, 1))
+    if (!result) return
+    const idx = result.chips.findIndex(
+      (c, i) => c.status === 'pending' && !firstLetterIndices.has(i) && !revealedIndices.has(i)
+    )
+    if (idx !== -1) {
+      setFirstLetterIndices(prev => new Set(Array.from(prev).concat(idx)))
+      setHintLevel(prev => Math.max(prev, 1))
+    }
   }
 
   function revealChip(idx: number) {
@@ -227,7 +233,7 @@ export function PracticeClient({
           if (isRevealed) {
             return <span key={i} className="rounded-lg px-3 py-1 text-sm font-medium bg-blue-500/40 text-blue-200">{chip.display}</span>
           }
-          const hintText = firstLetterHint && chip.display.length > 0
+          const hintText = firstLetterIndices.has(i) && chip.display.length > 0
             ? chip.display[0] + DOT.repeat(Math.max(0, chip.dotCount - 1))
             : DOT.repeat(chip.dotCount)
           return (
@@ -281,7 +287,7 @@ export function PracticeClient({
         <button
           onClick={activateFirstLetter}
           className={`rounded-lg border px-4 py-2 text-sm transition-colors ${
-            firstLetterHint
+            firstLetterIndices.size > 0
               ? 'border-yellow-500/60 bg-yellow-500/10 text-yellow-400'
               : 'border-gray-600 text-gray-300 hover:bg-gray-700'
           }`}
