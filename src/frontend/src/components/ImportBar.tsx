@@ -2,7 +2,7 @@
 
 import { useVideoReady, type JobStatus } from '@/hooks/useVideoReady'
 import { createClient } from '@/lib/supabase/client'
-import { FormEvent, Ref, useState } from 'react'
+import { FormEvent, Ref, useEffect, useState } from 'react'
 
 interface Props {
   apiBase: string
@@ -42,9 +42,12 @@ export function ImportBar({ apiBase, onImported, inputRef }: Props) {
   const jobStatus = useVideoReady(jobId, apiBase)
   const busy = submitting || jobStatus === 'queued' || jobStatus === 'processing'
 
-  if (jobStatus === 'ready' && jobId) {
-    onImported(jobId)
-  }
+  useEffect(() => {
+    if (jobStatus === 'ready' && jobId) {
+      setJobId(null)
+      onImported(jobId)
+    }
+  }, [jobStatus]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()

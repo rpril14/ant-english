@@ -13,7 +13,7 @@ import {
 } from '@/lib/library'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 interface Props {
   initialVideos: LibraryVideo[]
@@ -307,6 +307,11 @@ function relativeTime(iso: string): string {
 
 export function LibraryClient({ initialVideos, apiBase }: Props) {
   const [videos, setVideos] = useState<LibraryVideo[]>(initialVideos)
+
+  useEffect(() => {
+    setVideos(initialVideos)
+  }, [initialVideos])
+
   const [filter, setFilter] = useState<FilterId>('all')
   const [sort, setSort] = useState<SortId>('recent')
   const [query, setQuery] = useState('')
