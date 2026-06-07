@@ -220,10 +220,10 @@ export function PracticeClient({
               }`}
             >
               <span className="shrink-0 mt-0.5 text-xs text-gray-500 w-6">#{item.index + 1}</span>
-              {item.state === 'unseen' ? (
-                <span className="flex-1 text-xs blur-sm select-none text-gray-400">•••</span>
-              ) : (
+              {item.state === 'completed' ? (
                 <span className="flex-1 text-xs text-gray-300 line-clamp-2">{item.text}</span>
+              ) : (
+                <span className="flex-1 text-xs text-gray-600 select-none">***</span>
               )}
               {item.state === 'completed' && (
                 <span className="shrink-0 text-green-400 text-xs">✓</span>
