@@ -13,6 +13,7 @@ interface Props {
   sentences: Sentence[]
   initialProgress: Record<string, ProgressRow>
   initialIdx: number
+  initialSavedIds: string[]
   apiBase: string
 }
 
@@ -25,12 +26,16 @@ export function PracticeClient({
   sentences,
   initialProgress,
   initialIdx,
+  initialSavedIds,
   apiBase,
 }: Props) {
   const [currentIdx, setCurrentIdx] = useState(initialIdx)
   const [input, setInput] = useState('')
   const [progress, setProgress] = useState<Record<string, ProgressRow>>(initialProgress)
   const [chipsError, setChipsError] = useState(false)
+  const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set(initialSavedIds))
+  const [saveToast, setSaveToast] = useState<string | null>(null)
+  const saveToastTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   // Hint state — resets on sentence change
   const [showTranslation, setShowTranslation] = useState(true)
@@ -173,6 +178,44 @@ export function PracticeClient({
     playerRef.current.currentTime = sentence.start_time_ms / 1000
     playerRef.current.play()
   }, [sentence])
+
+  const toggleSave = useCallback(async (sentenceId: string) => {
+    const isSaved = savedIds.has(sentenceId)
+    // optimistic
+    setSavedIds(prev => {
+      const next = new Set(prev)
+      isSaved ? next.delete(sentenceId) : next.add(sentenceId)
+      return next
+    })
+    clearTimeout(saveToastTimer.current)
+    setSaveToast(isSaved ? 'Sentence removed from saved list' : 'Sentence saved')
+    saveToastTimer.current = setTimeout(() => setSaveToast(null), 2200)
+
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token ?? ''
+    try {
+      if (isSaved) {
+        await fetch(`${apiBase}/api/saved/${sentenceId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      } else {
+        await fetch(`${apiBase}/api/saved`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(sentenceId),
+        })
+      }
+    } catch {
+      // revert on failure
+      setSavedIds(prev => {
+        const next = new Set(prev)
+        isSaved ? next.add(sentenceId) : next.delete(sentenceId)
+        return next
+      })
+    }
+  }, [savedIds, apiBase])
 
   const tryAdvance = useCallback(() => {
     const completed = sentence ? !!progress[sentence.id]?.completed_at : false
@@ -388,6 +431,20 @@ export function PracticeClient({
           1st letter
         </button>
 
+        {sentence && (
+          <button
+            onClick={() => toggleSave(sentence.id)}
+            className={`rounded-lg border px-4 py-2 text-sm transition-colors ${
+              savedIds.has(sentence.id)
+                ? 'border-blue-500/60 bg-blue-500/10 text-blue-400'
+                : 'border-gray-600 text-gray-300 hover:bg-gray-700'
+            }`}
+            title="Save sentence"
+          >
+            {savedIds.has(sentence.id) ? '🔖 Saved' : '🔖 Save'}
+          </button>
+        )}
+
 
         <button
           onClick={tryAdvance}
@@ -409,6 +466,12 @@ export function PracticeClient({
       </div>
     </div>
     </main>
+
+      {saveToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-gray-600 bg-gray-800 px-4 py-3 text-sm font-medium text-gray-100 shadow-xl">
+          {saveToast}
+        </div>
+      )}
     </div>
   )
 }

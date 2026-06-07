@@ -2,7 +2,7 @@
 
 **Epic:** E03 — Library  
 **Lane:** normal  
-**Status:** planned  
+**Status:** implemented  
 **Product doc:** [docs/product/saved-sentences.md](../../../product/saved-sentences.md)
 
 ## Story
@@ -35,4 +35,4 @@ As Sara, I want to bookmark sentences I find difficult, so that I can review the
 
 ## Proof Status
 
-unit: no | integration: no | e2e: no | platform: no
+unit: yes | integration: no | e2e: no | platform: no

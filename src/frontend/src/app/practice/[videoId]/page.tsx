@@ -39,12 +39,20 @@ export default async function PracticePage({ params }: Props) {
   const firstIncomplete = sentenceList.findIndex(s => !initialProgress[s.id]?.completed_at)
   const initialIdx = firstIncomplete === -1 ? 0 : firstIncomplete
 
+  const { data: savedRows } = await supabase
+    .from('saved_sentences')
+    .select('sentence_id')
+    .in('sentence_id', sentenceList.map(s => s.id))
+
+  const initialSavedIds = (savedRows ?? []).map(r => r.sentence_id)
+
   return (
     <PracticeClient
       video={video}
       sentences={sentenceList}
       initialProgress={initialProgress}
       initialIdx={initialIdx}
+      initialSavedIds={initialSavedIds}
       apiBase={process.env.NEXT_PUBLIC_API_BASE ?? ''}
     />
   )
