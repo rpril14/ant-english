@@ -119,3 +119,11 @@ export function isComplete(result: MatchResult, threshold = 95): boolean {
     result.score >= threshold
   )
 }
+
+/**
+ * Applies score cap based on hint level used.
+ * Only hintLevel 3 (show all) triggers the 60% cap — levels 1 and 2 have no cap.
+ */
+export function applyScoreCap(score: number, hintLevel: number): number {
+  return hintLevel >= 3 ? Math.min(score, 60) : score
+}
