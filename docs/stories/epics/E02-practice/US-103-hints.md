@@ -17,7 +17,7 @@ As Tom, I want to get a small hint without seeing the full answer, so that I can
 - `hint_level = 1` recorded
 
 **AC-103-2 — Click chip to reveal word**
-- Clicking a pending chip reveals that specific word in full (blue chip)
+- Clicking any non-correct chip (pending, incorrect, or active) reveals that specific word in full (blue chip)
 - Input field not modified; `hint_level = 2` recorded
 
 **AC-103-3 — Proper names not penalised**

@@ -58,19 +58,28 @@ export function PracticeClient({
 
   const playerRef = useRef<HTMLVideoElement>(null)
   const hasPausedRef = useRef(false)
+  const isInitialMount = useRef(true)
 
   const sentence = sentences[currentIdx]
   const result = sentence ? match(input, sentence.text, sentence.named_entities) : null
 
-  // ── Seek to sentence start on mount and on sentence change ────────────────
+  // ── Reset hint/reveal state on sentence change; seek only on initial mount ──
+  // advance() and jumpTo() handle seek+play directly; re-seeking here would
+  // interrupt playback without resuming it.
 
   useEffect(() => {
     hasPausedRef.current = false
     setRevealedIndices(new Set())
     setFirstLetterIndices(new Set())
     setHintLevel(0)
-    if (playerRef.current && sentence) {
-      playerRef.current.currentTime = sentence.start_time_ms / 1000
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      if (playerRef.current && sentence) {
+        playerRef.current.currentTime = sentence.start_time_ms / 1000
+      }
+    }
+    if (sentence && progress[sentence.id]?.completed_at) {
+      setInput(sentence.text)
     }
   }, [currentIdx]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -102,9 +111,8 @@ export function PracticeClient({
 
   // ── Advance ───────────────────────────────────────────────────────────────
 
-  const advance = useCallback(async (score: number, completed: boolean) => {
+  const advance = useCallback((score: number, completed: boolean) => {
     if (!sentence) return
-    await saveProgress(sentence.id, score, completed, hintLevel)
 
     const nextIdx = currentIdx + 1
     if (nextIdx < sentences.length) {
@@ -116,6 +124,7 @@ export function PracticeClient({
         playerRef.current.play()
       }
     }
+    saveProgress(sentence.id, score, completed, hintLevel)
   }, [sentence, currentIdx, sentences, saveProgress, hintLevel])
 
   // ── Hint functions (AC-103-1, AC-103-2, AC-103-3) ────────────────────────
@@ -168,6 +177,14 @@ export function PracticeClient({
       hasPausedRef.current = true
       e.currentTarget.pause()
     }
+  }
+
+  // ── User-initiated play: treat as replay when paused at sentence end ───────
+
+  function handlePlay() {
+    if (!hasPausedRef.current || !playerRef.current || !sentence) return
+    hasPausedRef.current = false
+    playerRef.current.currentTime = sentence.start_time_ms / 1000
   }
 
   // ── Replay (AC-102-6) ─────────────────────────────────────────────────────
@@ -321,6 +338,7 @@ export function PracticeClient({
           width="100%"
           height="100%"
           onTimeUpdate={handleTimeUpdate}
+          onPlay={handlePlay}
         />
       </div>
 
@@ -338,29 +356,27 @@ export function PracticeClient({
       {/* Word chips */}
       <div className={`flex flex-wrap gap-2 min-h-[2.75rem] rounded-lg p-1 transition-colors ${chipsError ? 'outline outline-2 outline-red-500 bg-red-500/5' : ''}`}>
         {result?.chips.map((chip, i) => {
-          const isRevealed = revealedIndices.has(i) && chip.status === 'pending'
-
+          if (revealedIndices.has(i)) {
+            return <span key={i} className="rounded-lg px-3 py-1 text-sm font-medium bg-blue-500/40 text-blue-200">{chip.display}</span>
+          }
           if (chip.status === 'correct') {
             return <span key={i} className="rounded-lg px-3 py-1 text-sm font-medium bg-green-500 text-white">{chip.display}</span>
           }
           if (chip.status === 'incorrect') {
             return (
-              <span key={i} className="rounded-lg px-3 py-1 text-sm font-medium bg-red-500/40 text-red-300">
+              <span key={i} onClick={() => revealChip(i)} className="rounded-lg px-3 py-1 text-sm font-medium bg-red-500/40 text-red-300 cursor-pointer hover:bg-red-500/60 transition-colors" title="Click to reveal">
                 {chip.typed}<span className="opacity-40">{DOT.repeat(chip.dotCount)}</span>
               </span>
             )
           }
           if (chip.status === 'active') {
             return (
-              <span key={i} className="rounded-lg px-3 py-1 text-sm font-medium bg-yellow-400 text-gray-900">
+              <span key={i} onClick={() => revealChip(i)} className="rounded-lg px-3 py-1 text-sm font-medium bg-yellow-400 text-gray-900 cursor-pointer hover:bg-yellow-300 transition-colors" title="Click to reveal">
                 {chip.typed}<span className="opacity-40">{DOT.repeat(chip.dotCount)}</span>
               </span>
             )
           }
           // Pending
-          if (isRevealed) {
-            return <span key={i} className="rounded-lg px-3 py-1 text-sm font-medium bg-blue-500/40 text-blue-200">{chip.display}</span>
-          }
           const hintText = firstLetterIndices.has(i) && chip.display.length > 0
             ? chip.display[0] + DOT.repeat(Math.max(0, chip.dotCount - 1))
             : DOT.repeat(chip.dotCount)
@@ -412,6 +428,7 @@ export function PracticeClient({
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-2">
         <button
+          onMouseDown={e => e.preventDefault()}
           onClick={replay}
           className="rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
           title="Ctrl+R"
@@ -420,6 +437,7 @@ export function PracticeClient({
         </button>
 
         <button
+          onMouseDown={e => e.preventDefault()}
           onClick={activateFirstLetter}
           className={`rounded-lg border px-4 py-2 text-sm transition-colors ${
             firstLetterIndices.size > 0
@@ -433,6 +451,7 @@ export function PracticeClient({
 
         {sentence && (
           <button
+            onMouseDown={e => e.preventDefault()}
             onClick={() => toggleSave(sentence.id)}
             className={`rounded-lg border px-4 py-2 text-sm transition-colors ${
               savedIds.has(sentence.id)
@@ -445,8 +464,8 @@ export function PracticeClient({
           </button>
         )}
 
-
         <button
+          onMouseDown={e => e.preventDefault()}
           onClick={tryAdvance}
           disabled={!sentence || (isLast && sentenceCompleted)}
           className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-40"
@@ -456,6 +475,7 @@ export function PracticeClient({
 
         <div className="ml-auto flex items-center gap-3">
           <button
+            onMouseDown={e => e.preventDefault()}
             onClick={toggleTranslation}
             className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
           >

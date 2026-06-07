@@ -9,7 +9,7 @@ Covers US-102, US-103, US-108.
 3. Learner types what they heard in the dictation input.
 4. Word diff updates within 50 ms per keystroke.
 5. At ≥ 95% match: sentence auto-completes (`user_progress` upserted, chips turn green, translation revealed) — session **waits** for manual advance.
-6. Learner presses Enter or clicks Next to advance. Blocked with red chip flash if sentence is not yet completed.
+6. Learner presses Enter or clicks Next to advance. Blocked with red chip flash if sentence is not yet completed. On advance, player **auto-plays** the next sentence immediately.
 
 ## Word Matching
 
@@ -37,7 +37,7 @@ Each reference word is shown as a chip. Chip states update in real-time as the l
 |---|---|---|---|
 | 0 | No hint | Full score available | 100% |
 | 1 | Alt+H / "1st letter" button | Reveals first letter of next pending word (one word per press) | None |
-| 2 | Click a pending chip | Reveals that specific word in full | None |
+| 2 | Click any non-correct chip (pending, incorrect, or active) | Reveals that specific word in full (blue chip) | None |
 
 `hint_level_used` stored in `user_progress`.
 
@@ -53,11 +53,14 @@ Hints are additive: level 2 does not reset level 1 hints already shown.
 
 ## Controls
 
-| Action | Shortcut |
+| Action | Shortcut / Method |
 |---|---|
 | Replay sentence | Ctrl+R or Replay button |
 | Next sentence | Enter or Next button (only when sentence completed) |
 | First letter hint | Alt+H |
+| Replay via video controls | Clicking play on the video player while paused at a sentence boundary replays from `start_time_ms` |
+
+Clicking any control button does not steal focus from the dictation input; the learner can type immediately after clicking.
 
 ## Progress Persistence
 
@@ -73,3 +76,4 @@ Hints are additive: level 2 does not reset level 1 hints already shown.
 | Sentence contains only proper nouns | match% = 100 |
 | Extra whitespace in input | Normalised before matching |
 | Two sentences with identical text | Matched by `sentence_id`, not text |
+| Navigate back to a completed sentence | Input filled with sentence text; all chips shown green |

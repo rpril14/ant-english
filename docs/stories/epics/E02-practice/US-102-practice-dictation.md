@@ -33,15 +33,18 @@ As Alex, I want to type what I hear sentence by sentence and see which words I g
 **AC-102-5 — Manual advance**
 - Enter or Next → advances only if sentence is completed; otherwise chips flash red
 - Progress saved on advance
+- Player auto-plays the next sentence immediately on advance
 
 **AC-102-6 — Replay sentence**
-- Ctrl+R → seeks to `sentence[i].start_time_ms`; input preserved
+- Ctrl+R or Replay button → seeks to `sentence[i].start_time_ms`; input preserved
+- Clicking play on the video player while paused at a sentence boundary also seeks to `sentence[i].start_time_ms` and replays
 
 **AC-102-7 — No auto-advance**
 - Session never advances automatically; Enter or Next always required after sentence completion
 
 **AC-102-8 — Progress persists on refresh**
 - Resumes at first incomplete sentence; completed sentences show saved scores
+- Navigating back to a completed sentence fills input with sentence text so all chips display green
 
 ## Risk Flags
 
