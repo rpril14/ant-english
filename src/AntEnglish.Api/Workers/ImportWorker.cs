@@ -13,7 +13,8 @@ public class ImportWorker(IServiceScopeFactory scopeFactory, ILogger<ImportWorke
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await ResetStuckJobsAsync();
+        try { await ResetStuckJobsAsync(); }
+        catch (Exception ex) { logger.LogError(ex, "Failed to reset stuck jobs on startup — continuing"); }
 
         while (!stoppingToken.IsCancellationRequested)
         {
