@@ -13,7 +13,9 @@ builder.WebHost.UseSentry(o =>
 
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins(
+                builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+                ?? ["http://localhost:3000"])
               .AllowAnyHeader()
               .AllowAnyMethod()));
 
@@ -74,8 +76,11 @@ if (!builder.Environment.IsEnvironment("Testing"))
 var app = builder.Build();
 
 app.UseCors();
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 app.UseSentryTracing();
 app.UseAuthentication();
 app.UseAuthorization();
