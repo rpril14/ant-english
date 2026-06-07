@@ -15,8 +15,8 @@ As Tom, I want to see a translation of each sentence in my native language, so t
 - "Hide translation" hides row for all subsequent sentences
 - Preference saved to `localStorage`, restored on next visit
 
-**AC-104-2 — Translation at session start**
-- Toggle ON: translation below input in 14 px muted text
+**AC-104-2 — Translation shown after completion**
+- Toggle ON: translation appears below input in muted text only after the sentence is completed (≥ 95% or manual Next)
 
 **AC-104-3 — Translation unavailable — graceful degradation**
 - `sentences.translation = null`: shows `"Translation not available"`

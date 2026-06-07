@@ -8,8 +8,8 @@ Covers US-102, US-103, US-108.
 2. Player reaches `sentence[i].end_time_ms` → **pauses automatically**.
 3. Learner types what they heard in the dictation input.
 4. Word diff updates within 50 ms per keystroke.
-5. At ≥ 95% match (Auto Next ON): sentence auto-completes, `user_progress` upserted, player seeks to next sentence and plays.
-6. Below 95% or Auto Next OFF: learner presses Enter or clicks Next to advance manually.
+5. At ≥ 95% match: sentence auto-completes (`user_progress` upserted, chips turn green, translation revealed) — session **waits** for manual advance.
+6. Learner presses Enter or clicks Next to advance. Blocked with red chip flash if sentence is not yet completed.
 
 ## Word Matching
 
@@ -29,7 +29,7 @@ Each reference word is shown as a chip. Chip states update in real-time as the l
 | Active, prefix correct | Yellow | Typed letters + dots for remaining letters |
 | Active, wrong letter | Red | Typed letters + dots for remaining letters |
 | Completed correct (space pressed) | Green | Reference word |
-| Completed wrong (space pressed) | Red | Reference word |
+| Completed wrong (space pressed) | Red | Typed text (reference word never revealed) |
 
 ## Hint System
 
@@ -56,14 +56,8 @@ Hints are additive: level 2 does not reset level 1 hints already shown.
 | Action | Shortcut |
 |---|---|
 | Replay sentence | Ctrl+R or Replay button |
-| Next sentence | Enter or Next button |
+| Next sentence | Enter or Next button (only when sentence completed) |
 | First letter hint | Alt+H |
-| Reveal word | Alt+R |
-
-## Auto Next
-
-- Toggle ON: when match reaches ≥ 95%, session advances automatically without requiring Enter/Next.
-- Toggle OFF: always waits for manual Enter or Next press, regardless of match score.
 
 ## Progress Persistence
 

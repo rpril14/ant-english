@@ -22,23 +22,23 @@ As Alex, I want to type what I hear sentence by sentence and see which words I g
 - Active word (typing in progress, prefix correct): yellow chip with typed letters + dots for remaining
 - Active word (wrong letter typed): red chip with typed letters + dots for remaining
 - Completed correct word: green chip showing the word
-- Completed wrong word: red chip showing the word
+- Completed wrong word: red chip showing the typed text (reference word not revealed)
 
 **AC-102-3 — Normalisation**
 - `"im here to learn english"` matches `"I'm here to learn English."` at 100%
 
 **AC-102-4 — Sentence completion**
-- ≥ 95% match → auto-complete; `user_progress` upserted
+- ≥ 95% match → chips turn green, `user_progress` upserted, translation revealed — session waits for manual Next
 
 **AC-102-5 — Manual advance**
-- Enter or Next → advance regardless of score; progress saved
+- Enter or Next → advances only if sentence is completed; otherwise chips flash red
+- Progress saved on advance
 
 **AC-102-6 — Replay sentence**
 - Ctrl+R → seeks to `sentence[i].start_time_ms`; input preserved
 
-**AC-102-7 — Auto Next toggle**
-- ON: when match reaches ≥ 95%, auto-advance without Enter/Next
-- OFF: always wait for manual advance regardless of score
+**AC-102-7 — No auto-advance**
+- Session never advances automatically; Enter or Next always required after sentence completion
 
 **AC-102-8 — Progress persists on refresh**
 - Resumes at first incomplete sentence; completed sentences show saved scores
