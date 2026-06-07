@@ -30,6 +30,7 @@ export function PracticeClient({
   const [currentIdx, setCurrentIdx] = useState(initialIdx)
   const [input, setInput] = useState('')
   const [progress, setProgress] = useState<Record<string, ProgressRow>>(initialProgress)
+  const [chipsError, setChipsError] = useState(false)
 
   // Hint state — resets on sentence change
   const [showTranslation, setShowTranslation] = useState(true)
@@ -173,23 +174,28 @@ export function PracticeClient({
     playerRef.current.play()
   }, [sentence])
 
+  const tryAdvance = useCallback(() => {
+    const completed = sentence ? !!progress[sentence.id]?.completed_at : false
+    if (!completed) {
+      setChipsError(true)
+      setTimeout(() => setChipsError(false), 600)
+      return
+    }
+    const effective = result ? applyScoreCap(result.score, hintLevel) : 0
+    advance(effective, true)
+  }, [sentence, progress, result, hintLevel, advance])
+
   // ── Keyboard shortcuts ────────────────────────────────────────────────────
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.ctrlKey && e.key === 'r') { e.preventDefault(); replay() }
       if (e.altKey && e.key === 'h')  { e.preventDefault(); activateFirstLetter() }
-      if (e.key === 'Enter' && document.activeElement?.tagName === 'INPUT') {
-        e.preventDefault()
-        if (result) {
-          const effective = applyScoreCap(result.score, hintLevel)
-          advance(effective, effective >= 95)
-        }
-      }
+      if (e.key === 'Enter') { e.preventDefault(); tryAdvance() }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [replay, result, advance])
+  }, [replay, tryAdvance]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -287,7 +293,7 @@ export function PracticeClient({
       )}
 
       {/* Word chips */}
-      <div className="flex flex-wrap gap-2 min-h-[2.75rem]">
+      <div className={`flex flex-wrap gap-2 min-h-[2.75rem] rounded-lg p-1 transition-colors ${chipsError ? 'outline outline-2 outline-red-500 bg-red-500/5' : ''}`}>
         {result?.chips.map((chip, i) => {
           const isRevealed = revealedIndices.has(i) && chip.status === 'pending'
 
@@ -381,7 +387,7 @@ export function PracticeClient({
 
 
         <button
-          onClick={() => result && advance(effectiveScore, effectiveScore >= 95)}
+          onClick={tryAdvance}
           disabled={!sentence || (isLast && sentenceCompleted)}
           className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-40"
         >
