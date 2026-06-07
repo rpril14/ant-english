@@ -33,7 +33,6 @@ export function PracticeClient({
   // Hint state — resets on sentence change
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set())
   const [firstLetterHint, setFirstLetterHint] = useState(false)
-  const [showAll, setShowAll] = useState(false)
   const [hintLevel, setHintLevel] = useState(0)
 
   const playerRef = useRef<HTMLVideoElement>(null)
@@ -48,7 +47,6 @@ export function PracticeClient({
     hasPausedRef.current = false
     setRevealedIndices(new Set())
     setFirstLetterHint(false)
-    setShowAll(false)
     setHintLevel(0)
     if (playerRef.current && sentence) {
       playerRef.current.currentTime = sentence.start_time_ms / 1000
@@ -106,26 +104,9 @@ export function PracticeClient({
     setHintLevel(prev => Math.max(prev, 1))
   }
 
-  function revealNextWord() {
-    if (!result) return
-    const idx = result.chips.findIndex(
-      (c, i) => c.status === 'pending' && !revealedIndices.has(i)
-    )
-    if (idx !== -1) {
-      setRevealedIndices(prev => new Set(Array.from(prev).concat(idx)))
-      setHintLevel(prev => Math.max(prev, 2))
-    }
-  }
-
-  function revealAllWords() {
-    if (!result) return
-    const allPending = result.chips.reduce<Set<number>>(
-      (acc, c, i) => (c.status === 'pending' ? acc.add(i) : acc),
-      new Set()
-    )
-    setRevealedIndices(allPending)
-    setShowAll(true)
-    setHintLevel(3)
+  function revealChip(idx: number) {
+    setRevealedIndices(prev => new Set(Array.from(prev).concat(idx)))
+    setHintLevel(prev => Math.max(prev, 2))
   }
 
   // ── Auto-next on 95% (AC-102-4) ──────────────────────────────────────────
@@ -163,7 +144,6 @@ export function PracticeClient({
     function onKeyDown(e: KeyboardEvent) {
       if (e.ctrlKey && e.key === 'r') { e.preventDefault(); replay() }
       if (e.altKey && e.key === 'h')  { e.preventDefault(); activateFirstLetter() }
-      if (e.altKey && e.key === 'r')  { e.preventDefault(); revealNextWord() }
       if (e.key === 'Enter' && document.activeElement?.tagName === 'INPUT') {
         e.preventDefault()
         if (result) {
@@ -228,7 +208,6 @@ export function PracticeClient({
       <div className="flex flex-wrap gap-2 min-h-[2.75rem]">
         {result?.chips.map((chip, i) => {
           const isRevealed = revealedIndices.has(i) && chip.status === 'pending'
-          const isShowAll  = showAll && chip.status === 'pending'
 
           if (chip.status === 'correct') {
             return <span key={i} className="rounded-lg px-3 py-1 text-sm font-medium bg-green-500 text-white">{chip.display}</span>
@@ -245,7 +224,7 @@ export function PracticeClient({
             )
           }
           // Pending
-          if (isRevealed || isShowAll) {
+          if (isRevealed) {
             return <span key={i} className="rounded-lg px-3 py-1 text-sm font-medium bg-blue-500/40 text-blue-200">{chip.display}</span>
           }
           const hintText = firstLetterHint && chip.display.length > 0
@@ -254,9 +233,9 @@ export function PracticeClient({
           return (
             <span
               key={i}
-              onClick={() => revealNextWord()}
+              onClick={() => revealChip(i)}
               className="rounded-lg px-3 py-1 text-sm font-medium bg-gray-700 text-gray-400 cursor-pointer hover:bg-gray-600 transition-colors select-none"
-              title="Alt+R to reveal"
+              title="Click to reveal"
             >
               {hintText}
             </span>
@@ -311,20 +290,6 @@ export function PracticeClient({
           1st letter
         </button>
 
-        <button
-          onClick={revealNextWord}
-          className="rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
-          title="Alt+R"
-        >
-          Reveal word
-        </button>
-
-        <button
-          onClick={revealAllWords}
-          className="rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
-        >
-          Show all
-        </button>
 
         <button
           onClick={() => result && advance(effectiveScore, effectiveScore >= 95)}
