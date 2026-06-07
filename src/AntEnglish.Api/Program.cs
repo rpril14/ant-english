@@ -1,7 +1,6 @@
+using AntEnglish.Api.Workers;
 using AntEnglish.Services.Extensions;
 using FluentValidation;
-using Hangfire;
-using Hangfire.InMemory;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -69,9 +68,8 @@ builder.Services.AddAuthorization();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddAntEnglishServices();
 
-builder.Services.AddHangfire(config =>
-    config.UseInMemoryStorage());
-builder.Services.AddHangfireServer();
+if (!builder.Environment.IsEnvironment("Testing"))
+    builder.Services.AddHostedService<ImportWorker>();
 
 var app = builder.Build();
 
@@ -84,7 +82,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTimeOffset.UtcNow }));
-app.UseHangfireDashboard("/hangfire");
 
 app.Run();
 

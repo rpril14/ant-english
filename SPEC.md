@@ -1,5 +1,5 @@
 # English Listening Practice App — Product Spec
-> v2.1 · Stack: Next.js 14 · ASP.NET Core 8 · Supabase · Hangfire
+> v2.2 · Stack: Next.js 14 · ASP.NET Core 8 · Supabase
 
 ---
 
@@ -106,7 +106,7 @@ A web application that lets learners improve English listening comprehension by 
 | | |
 |---|---|
 | Framework | ASP.NET Core Web API (.NET 8) |
-| Background jobs | Hangfire — job queue, retries, dashboard at `/hangfire` |
+| Background jobs | `ImportWorker` — `BackgroundService` polling `videos` table, in-process with API |
 | ORM | Entity Framework Core + Npgsql (snake_case naming convention) |
 | Validation | FluentValidation — request model validation |
 | YouTube metadata | YouTube Data API v3 — title, duration, thumbnail, CC check |
@@ -120,8 +120,8 @@ A web application that lets learners improve English listening comprehension by 
 src/
   AntEnglish.Api/
     Controllers/        # HTTP endpoints (ImportController, LibraryController, etc.)
-    Jobs/               # Hangfire background jobs (CcImportJob) — in-process with API
-    Program.cs          # AddHangfire() + UseHangfireDashboard() + AddHangfireServer()
+    Workers/            # BackgroundService workers (ImportWorker)
+    Program.cs          # AddHostedService<ImportWorker>()
   AntEnglish.Services/
     Interfaces/         # Service contracts
     Services/           # Business logic implementations
@@ -136,7 +136,7 @@ src/
     hooks/              # e.g. useVideoReady.ts (Supabase Realtime + polling fallback)
 ```
 
-> **Jobs in Api, not a separate Worker project.** Hangfire runs in-process with the API host — one Railway container, one deployment. A separate Worker project is deferred to Phase 2 if Whisper transcription requires independent CPU scaling.
+> **Jobs in Api, not a separate Worker project.** `ImportWorker` runs in-process with the API host — one Railway container, one deployment. A separate Worker project is deferred to Phase 2 if Whisper transcription requires independent CPU scaling.
 
 ### 4.3 Data & infrastructure
 
@@ -145,7 +145,7 @@ src/
 | Database | Supabase (PostgreSQL 15) — snake_case columns |
 | Auth | Supabase Auth — Google OAuth provider |
 | File storage | Supabase Storage — thumbnails only in Phase 1 |
-| Cache / queue | Upstash Redis — Hangfire job queue backend |
+| Cache / queue | — (no external queue; job state persisted in `videos.transcript_status`) |
 | Realtime | Supabase Realtime — push `video_ready` event to frontend |
 | Error tracking | Sentry — Next.js + .NET |
 | CI/CD | GitHub Actions — lint, test, deploy on merge to main |
@@ -208,7 +208,7 @@ src/
 
 **AC-101-8 — Background job failure**
 - GIVEN the background job fails (yt-dlp error, DeepL timeout, etc.)
-- WHEN Hangfire has retried 3 times (30s, 5min, 30min backoff)
+- WHEN the worker catches the exception
 - THEN the card shows status `"Import failed"` with a retry button
 - AND the error is logged to Sentry with `job_id` and failure reason
 
@@ -848,7 +848,7 @@ CREATE POLICY "authenticated users read videos"
 | Video private / age-restricted | 403 | `"This video is not publicly accessible"` |
 | No English CC (Phase 1) | 400 | `"This video has no English captions — Phase 1 only supports CC-enabled videos"` |
 | CC exists but not in English | 400 | `"Only English captions are supported"` |
-| yt-dlp failure | — | Hangfire retries 3× (30s → 5min → 30min), then card → `failed` state + toast |
+| yt-dlp failure | — | Worker marks video `failed`, card → `failed` state + toast |
 | DeepL quota exceeded | — | Sentences stored without translation; UI shows `"Translation not available"` |
 | YouTube API quota exceeded | 503 | `"Service temporarily unavailable — please try again later"` |
 

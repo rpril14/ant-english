@@ -1,9 +1,7 @@
 using AntEnglish.Api.Extensions;
 using AntEnglish.Api.Helpers;
-using AntEnglish.Api.Jobs;
 using AntEnglish.Services.Interfaces;
 using FluentValidation;
-using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -28,7 +26,6 @@ public class ImportRequestValidator : AbstractValidator<ImportRequest>
 public class ImportController(
     IVideoImportService importService,
     IYouTubeService youtube,
-    IBackgroundJobClient jobs,
     IValidator<ImportRequest> validator) : ControllerBase
 {
     [HttpPost("import")]
@@ -66,8 +63,6 @@ public class ImportController(
 
         var videoId = await importService.CreateAndLinkAsync(
             userId, youtubeId, meta.Title, meta.ThumbnailUrl, meta.DurationSeconds, meta.CcType);
-
-        jobs.Enqueue<CcImportJob>(j => j.RunAsync(videoId));
 
         return Ok(new { jobId = videoId, status = "queued" });
     }
