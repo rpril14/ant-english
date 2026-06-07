@@ -29,7 +29,6 @@ export function PracticeClient({
 }: Props) {
   const [currentIdx, setCurrentIdx] = useState(initialIdx)
   const [input, setInput] = useState('')
-  const [autoNext, setAutoNext] = useState(true)
   const [progress, setProgress] = useState<Record<string, ProgressRow>>(initialProgress)
 
   // Hint state — resets on sentence change
@@ -143,13 +142,15 @@ export function PracticeClient({
     setHintLevel(prev => Math.max(prev, 2))
   }
 
-  // ── Auto-next on 95% (AC-102-4) ──────────────────────────────────────────
+  // ── Auto-complete at 95% — mark done, show translation, wait for manual Next ──
 
   useEffect(() => {
-    if (!result || !sentence || !autoNext) return
+    if (!result || !sentence) return
     if (progress[sentence.id]?.completed_at) return
     const effective = applyScoreCap(result.score, hintLevel)
-    if (isComplete(result) && effective >= 95) advance(effective, true)
+    if (isComplete(result) && effective >= 95) {
+      saveProgress(sentence.id, effective, true, hintLevel)
+    }
   }, [result?.score, result?.chips.length, hintLevel]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Video: pause at sentence end (AC-102-1) ───────────────────────────────
@@ -350,7 +351,7 @@ export function PracticeClient({
       />
 
       {/* Translation (AC-104-1, AC-104-2, AC-104-3) */}
-      {showTranslation && sentence && (
+      {showTranslation && sentence && sentenceCompleted && (
         <p className="text-sm text-gray-500 italic">
           {sentence.translation ?? 'Translation not available'}
         </p>
@@ -395,15 +396,6 @@ export function PracticeClient({
             {showTranslation ? 'Hide translation' : 'Show translation'}
           </button>
 
-          <label className="flex items-center gap-2 text-sm text-gray-400 select-none cursor-pointer">
-            <input
-              type="checkbox"
-              checked={autoNext}
-              onChange={e => setAutoNext(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-600 bg-gray-700 accent-blue-500"
-            />
-            Auto Next
-          </label>
         </div>
       </div>
     </div>
