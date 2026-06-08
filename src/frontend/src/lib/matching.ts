@@ -41,7 +41,7 @@ function normaliseWord(word: string): string {
 function splitDisplay(text: string): string[] {
   return text
     .replace(/[''ʼ]/g, "'")
-    .replace(/[^a-zA-Z0-9\s]/g, '')
+    .replace(/[^a-zA-Z0-9'\s]/g, '')
     .trim()
     .split(/\s+/)
     .filter(Boolean)
