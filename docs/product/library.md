@@ -5,8 +5,10 @@ Covers US-105.
 ## Library Grid
 
 - Desktop: 3 columns. Tablet: 2 columns. Mobile: 1 column.
-- Each card: thumbnail, title, sentence count, progress bar, last studied date.
+- Each card: thumbnail (real or pastel gradient fallback), title, sentence count, progress bar, last studied date, status badge, favourite toggle, "Saved" shortcut.
 - Import bar pinned at bottom of screen at all times.
+- UI language: English.
+- Theme: warm paper palette (`#F1EFE8` base) with teal / coral / purple accents; fonts Be Vietnam Pro (body) + Newsreader (stat figures).
 
 ## Card States
 
@@ -14,19 +16,21 @@ Covers US-105.
 |---|---|---|
 | `queued` | Job just enqueued | Spinner, disabled |
 | `processing` | Worker running | "Processing…", disabled |
-| `ready` | Never studied | "Start practicing" |
-| `in-progress` | 1 ≤ completed < total | "Continue (X / N)" |
-| `completed` | completed = total | "Review again" (green) |
-| `failed` | 3 retries exhausted | "Import failed — Retry" |
+| `ready` | Never studied | "Continue" |
+| `learning` | 1 ≤ practiced < total | "Continue" |
+| `done` | practiced = total | "Review" |
+| `failed` | 3 retries exhausted | (failed badge) |
 
 ## Filtering
 
-Filter pills: All, In progress, Completed, Favourites, custom tags.
+Filter pills: All, Learning, Done, Favorites.
 
 ## Sorting
 
-- Recently studied: `last_studied_at DESC`
+- Recently added: `added_at DESC` (default)
 - Progress: `completed_sentences / total_sentences DESC`
+- Duration: `duration_seconds DESC`
+- A–Z: `title ASC` (Vietnamese locale)
 
 ## Favourite Toggle
 

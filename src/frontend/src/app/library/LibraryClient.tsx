@@ -20,61 +20,123 @@ interface Props {
   apiBase: string
 }
 
-// ── design tokens (dark theme) ───────────────────────────────────────────────
+// ── design tokens ─────────────────────────────────────────────────────────────
 
 const T = {
-  bg:       'oklch(0.165 0.006 265)',
-  bg2:      'oklch(0.195 0.007 265)',
-  surface:  'oklch(0.215 0.008 265)',
-  surface2: 'oklch(0.248 0.009 265)',
-  surface3: 'oklch(0.285 0.010 265)',
-  line:     'oklch(0.32 0.010 265)',
-  lineSoft: 'oklch(0.27 0.009 265)',
-  text:     'oklch(0.97 0.004 265)',
-  text2:    'oklch(0.78 0.006 265)',
-  text3:    'oklch(0.62 0.008 265)',
-  text4:    'oklch(0.50 0.008 265)',
-  blue:     'oklch(0.66 0.155 255)',
-  blueDim:  'oklch(0.66 0.155 255 / 0.14)',
-  green:    'oklch(0.74 0.15 158)',
-  greenDim: 'oklch(0.74 0.15 158 / 0.14)',
-  amber:    'oklch(0.78 0.14 75)',
-  amberDim: 'oklch(0.78 0.14 75 / 0.14)',
-  rose:     'oklch(0.68 0.18 18)',
+  bg:        '#F1EFE8',
+  bg2:       '#E9E7DE',
+  surface:   '#FBFAF6',
+  surface2:  '#F3F1EA',
+  surface3:  '#ECEAE1',
+  line:      '#D3D1C7',
+  lineSoft:  '#E1DFD5',
+  text:      '#2C2C2A',
+  text2:     '#56554F',
+  text3:     '#84837B',
+  text4:     '#A6A59C',
+  ink:       '#2C2C2A',
+  paper:     '#F6F4ED',
+  teal:      '#1D9E75',
+  tealDim:   'rgba(29,158,117,0.13)',
+  coral:     '#D85A30',
+  coralDim:  'rgba(216,90,48,0.12)',
+  purple:    '#7F77DD',
+  purpleDim: 'rgba(127,119,221,0.15)',
+  shadow:    '0 1px 2px rgba(44,44,42,0.05), 0 6px 20px rgba(44,44,42,0.06)',
+  shadowLg:  '0 2px 6px rgba(44,44,42,0.07), 0 18px 44px rgba(44,44,42,0.12)',
 }
-
-// ── card state metadata ──────────────────────────────────────────────────────
 
 const STATE_META: Record<CardState, { label: string; color: string; dim: string }> = {
-  processing: { label: 'Đang xử lý', color: T.amber, dim: T.amberDim },
-  failed:     { label: 'Lỗi',        color: 'oklch(0.65 0.18 25)', dim: 'oklch(0.65 0.18 25 / 0.14)' },
-  ready:      { label: 'Chưa học',   color: T.text3, dim: `color-mix(in oklch, ${T.text3} 14%, transparent)` },
-  learning:   { label: 'Đang học',   color: T.blue,  dim: T.blueDim },
-  done:       { label: 'Hoàn thành', color: T.green, dim: T.greenDim },
+  processing: { label: 'Processing',  color: T.coral,  dim: T.coralDim },
+  failed:     { label: 'Failed',      color: '#C0392B', dim: 'rgba(192,57,43,0.12)' },
+  ready:      { label: 'Not started', color: T.text3,   dim: `color-mix(in srgb, ${T.text3} 14%, transparent)` },
+  learning:   { label: 'Learning',    color: T.teal,    dim: T.tealDim },
+  done:       { label: 'Done',        color: T.teal,    dim: T.tealDim },
 }
 
-// ── sub-components ───────────────────────────────────────────────────────────
+// ── thumbnail pastel tints (derived from videoId hash) ────────────────────────
 
-function StatCard({ icon, label, value, unit, accent }: {
-  icon: string; label: string; value: string | number; unit?: string; accent: string
+const TINTS: [string, string][] = [
+  ['oklch(0.95 0.03 165)', 'oklch(0.90 0.045 175)'],
+  ['oklch(0.95 0.03 290)', 'oklch(0.90 0.045 280)'],
+  ['oklch(0.95 0.035 135)', 'oklch(0.90 0.05 145)'],
+  ['oklch(0.95 0.03 15)', 'oklch(0.91 0.045 25)'],
+  ['oklch(0.95 0.035 60)', 'oklch(0.91 0.05 55)'],
+  ['oklch(0.95 0.03 235)', 'oklch(0.90 0.05 245)'],
+]
+
+function getTint(id: string): [string, string] {
+  const h = id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+  return TINTS[h % TINTS.length]
+}
+
+// ── svg icons ─────────────────────────────────────────────────────────────────
+
+function Icon({ name, size = 18, fillCurrent = false }: { name: string; size?: number; fillCurrent?: boolean }) {
+  const paths: Record<string, React.ReactNode> = {
+    search:    <><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></>,
+    play:      <path d="M7 5.5v13l11-6.5z" fill="currentColor" stroke="none" />,
+    heart:     <path d="M12 20s-7-4.5-9.5-9C1 8 2.5 4.5 6 4.5c2 0 3.2 1.2 4 2.3.8-1.1 2-2.3 4-2.3 3.5 0 5 3.5 3.5 6.5C19 15.5 12 20 12 20z" fill={fillCurrent ? 'currentColor' : 'none'} />,
+    bookmark:  <path d="M6 4h12v16l-6-4-6 4z" />,
+    more:      <><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/></>,
+    check:     <path d="M5 12.5l4.5 4.5L19 7" strokeWidth="2.6" />,
+    plus:      <><path d="M12 5v14" /><path d="M5 12h14" /></>,
+    chevron:   <path d="m6 9 6 6 6-6" />,
+    layers:    <><path d="M12 3 3 8l9 5 9-5-9-5z" /><path d="m3 13 9 5 9-5" /></>,
+    trophy:    <><path d="M7 4h10v4a5 5 0 0 1-10 0V4z" /><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3" /><path d="M12 13v4M9 21h6M10 21v-2h4v2" /></>,
+    book:      <><path d="M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 0-2 2V4z"/><path d="M5 18h13"/></>,
+    flame:     <path d="M12 3c1 3 4 4.5 4 8a4 4 0 0 1-8 0c0-1 .3-1.8.8-2.5C8 9.5 7 10.5 7 12.5a5 5 0 0 0 10 0C17 8 14 5.5 12 3z" />,
+    sparkles:  <path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3zM18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8L18 14z" fill="currentColor" stroke="none" />,
+    list:      <><path d="M8 6h12M8 12h12M8 18h12" /><circle cx="4" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1" fill="currentColor" stroke="none"/></>,
+    rotate:    <><path d="M21 12a9 9 0 1 1-3-6.7" /><path d="M21 4v5h-5" /></>,
+    x:         <><path d="M6 6l12 12M18 6 6 18" /></>,
+    clock:     <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>,
+    headphones:<><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/></>,
+    youtube:   <><rect x="3" y="6" width="18" height="12" rx="3.5"/><path d="M10.5 9.5v5l4-2.5z" fill="currentColor" stroke="none"/></>,
+  }
+  return (
+    <svg
+      width={size} height={size} viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round"
+      style={{ display: 'block', flexShrink: 0 }}
+    >
+      {paths[name] ?? null}
+    </svg>
+  )
+}
+
+// ── sub-components ────────────────────────────────────────────────────────────
+
+function StatCard({ icon, label, value, unit, accent, delay }: {
+  icon: string; label: string; value: string | number; unit?: string; accent: string; delay: number
 }) {
   return (
-    <div style={{
-      background: `linear-gradient(180deg, oklch(1 0 0 / 0.02), transparent), ${T.surface}`,
-      border: `1px solid ${T.lineSoft}`,
-      borderRadius: 16,
-      padding: '18px 20px 20px',
-    }}>
+    <div
+      className="lib-stat"
+      style={{
+        background: `linear-gradient(180deg, rgba(255,255,255,0.02), transparent), ${T.surface}`,
+        border: `1px solid ${T.lineSoft}`,
+        borderRadius: 16,
+        padding: '18px 20px 20px',
+        animationDelay: `${delay}ms`,
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <span style={{ fontSize: 13, color: T.text3, fontWeight: 500 }}>{label}</span>
         <span style={{
           width: 28, height: 28, borderRadius: 9, display: 'grid', placeItems: 'center',
-          color: accent, background: `color-mix(in oklch, ${accent} 14%, transparent)`,
-          fontSize: 15,
-        }}>{icon}</span>
+          color: accent, background: `color-mix(in srgb, ${accent} 14%, transparent)`,
+        }}>
+          <Icon name={icon} size={15} />
+        </span>
       </div>
-      <div style={{ fontFamily: 'var(--font-geist-sans, system-ui)', fontSize: 36, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.02em', color: T.text }}>
-        {value}{unit && <span style={{ fontSize: 15, fontWeight: 500, color: T.text3, marginLeft: 4 }}>{unit}</span>}
+      <div style={{
+        fontFamily: 'var(--font-newsreader, Georgia, serif)',
+        fontSize: 38, fontWeight: 500, lineHeight: 1, letterSpacing: '-0.01em',
+        color: T.text,
+      }}>
+        {value}{unit && <span style={{ fontFamily: 'var(--font-be-vietnam-pro, system-ui)', fontSize: 15, fontWeight: 500, color: T.text3, marginLeft: 4 }}>{unit}</span>}
       </div>
     </div>
   )
@@ -82,13 +144,17 @@ function StatCard({ icon, label, value, unit, accent }: {
 
 function StatusBadge({ state }: { state: CardState }) {
   const m = STATE_META[state]
+  const isDone = state === 'done'
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
-      fontSize: 12, fontWeight: 700,
+      fontSize: 12, fontWeight: 500,
       padding: '4px 10px', borderRadius: 8,
-      color: m.color, background: m.dim,
+      color: isDone ? T.paper : m.color,
+      background: isDone ? T.teal : m.dim,
+      boxShadow: isDone ? '0 2px 6px rgba(29,158,117,0.28)' : undefined,
     }}>
+      {isDone && <Icon name="check" size={13} />}
       {state === 'processing' && (
         <span style={{ width: 6, height: 6, borderRadius: '50%', background: m.color, display: 'inline-block', animation: 'lib-pulse 1.2s ease-in-out infinite' }} />
       )}
@@ -106,66 +172,175 @@ function ProgressBar({ practiced, total, color }: { practiced: number; total: nu
   )
 }
 
-function VideoCard({ video, onFav, onPlay, onRemove }: {
+function SortMenu({ value, onChange }: { value: SortId; onChange: (v: SortId) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  const OPTIONS: { id: SortId; label: string }[] = [
+    { id: 'recent',   label: 'Recently Added' },
+    { id: 'progress', label: 'Most Progress' },
+    { id: 'duration', label: 'Duration' },
+    { id: 'az',       label: 'Title A–Z' },
+  ]
+  const current = OPTIONS.find(o => o.id === value) ?? OPTIONS[0]
+
+  useEffect(() => {
+    if (!open) return
+    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey) }
+  }, [open])
+
+  return (
+    <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 9,
+          height: 52, padding: '0 14px 0 16px',
+          borderRadius: 14,
+          background: T.surface,
+          border: `1px solid ${open ? `color-mix(in srgb, ${T.teal} 50%, transparent)` : T.lineSoft}`,
+          color: T.text2,
+          fontFamily: 'inherit', fontSize: 14, fontWeight: 500,
+          cursor: 'pointer',
+          boxShadow: open ? `0 0 0 4px ${T.tealDim}` : undefined,
+          transition: 'all 0.16s',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <Icon name="list" size={16} />
+        <span style={{ color: T.text }}>
+          <span style={{ color: T.text3, fontWeight: 400 }}>Sort: </span>
+          {current.label}
+        </span>
+        <span style={{ display: 'grid', placeItems: 'center', transform: open ? 'rotate(180deg)' : undefined, transition: 'transform 0.2s' }}>
+          <Icon name="chevron" size={15} />
+        </span>
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 30,
+          minWidth: 220,
+          padding: 6,
+          background: T.surface,
+          border: `1px solid ${T.line}`,
+          borderRadius: 14,
+          boxShadow: T.shadowLg,
+          display: 'flex', flexDirection: 'column', gap: 2,
+          animation: 'lib-pop 0.16s cubic-bezier(.2,.7,.2,1) both',
+          transformOrigin: 'top right',
+        }}>
+          {OPTIONS.map(o => (
+            <button
+              key={o.id}
+              onClick={() => { onChange(o.id); setOpen(false) }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                width: '100%', height: 40, padding: '0 12px',
+                border: 'none', borderRadius: 10,
+                background: o.id === value ? T.tealDim : 'transparent',
+                fontFamily: 'inherit', fontSize: 14,
+                color: o.id === value ? T.teal : T.text2,
+                fontWeight: o.id === value ? 500 : 400,
+                textAlign: 'left', cursor: 'pointer',
+                transition: 'background 0.12s, color 0.12s',
+              }}
+              className="lib-sort-item"
+            >
+              <span>{o.label}</span>
+              {o.id === value && <Icon name="check" size={15} />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function VideoCard({ video, onFav, onPlay, onSave, onRemove, index }: {
   video: LibraryVideo
   onFav: (id: string) => void
   onPlay: (id: string) => void
+  onSave: (id: string) => void
   onRemove: (id: string) => void
+  index: number
 }) {
   const state = deriveCardState(video)
   const processing = state === 'processing'
   const done = state === 'done'
   const dur = formatDuration(video.durationSeconds)
+  const [a, b] = getTint(video.videoId)
 
   return (
-    <article style={{
-      background: T.surface,
-      border: `1px solid ${T.lineSoft}`,
-      borderRadius: 16,
-      overflow: 'hidden',
-      display: 'flex', flexDirection: 'column',
-      transition: 'transform 0.2s cubic-bezier(.2,.7,.2,1), border-color 0.2s, box-shadow 0.2s',
-    }}
-    className="lib-card"
+    <article
+      className="lib-card"
+      style={{
+        background: T.surface,
+        border: `1px solid ${T.lineSoft}`,
+        borderRadius: 16,
+        overflow: 'hidden',
+        display: 'flex', flexDirection: 'column',
+        animationDelay: `${30 + index * 55}ms`,
+      }}
     >
       {/* thumbnail */}
       <div
-        style={{ position: 'relative', aspectRatio: '16 / 9', cursor: processing ? 'default' : 'pointer', overflow: 'hidden', display: 'grid', placeItems: 'center', background: T.surface2 }}
+        style={{
+          position: 'relative', aspectRatio: '16 / 9',
+          cursor: processing ? 'default' : 'pointer',
+          overflow: 'hidden',
+          display: 'grid', placeItems: 'center',
+          background: `linear-gradient(150deg, ${a}, ${b})`,
+        }}
         onClick={() => !processing && onPlay(video.videoId)}
       >
-        {video.thumbnailUrl ? (
-          <img src={video.thumbnailUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : (
-          <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(150deg, ${T.surface2}, ${T.surface3})` }} />
+        {video.thumbnailUrl && (
+          <img
+            src={video.thumbnailUrl} alt=""
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+          />
         )}
+        {/* grain + light overlay */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'radial-gradient(120% 120% at 80% 10%, rgba(255,255,255,0.25), transparent 50%), radial-gradient(100% 100% at 10% 90%, rgba(0,0,0,0.06), transparent 55%)',
+          mixBlendMode: 'overlay',
+        }} />
+
         {processing ? (
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ width: 38, height: 38, borderRadius: '50%', border: `3px solid ${T.amberDim}`, borderTopColor: T.amber, animation: 'lib-spin 0.8s linear infinite' }} />
+            <div style={{ width: 38, height: 38, borderRadius: '50%', border: `3px solid ${T.coralDim}`, borderTopColor: T.coral, animation: 'lib-spin 0.8s linear infinite' }} />
           </div>
         ) : (
           <button
             className="lib-play-btn"
-            aria-label="Luyện tập"
+            aria-label="Practice"
             style={{
               position: 'relative', zIndex: 1,
               width: 56, height: 56, borderRadius: '50%',
               border: 'none', cursor: 'pointer',
               display: 'grid', placeItems: 'center',
-              background: 'oklch(0.22 0.01 265 / 0.86)',
+              background: 'rgba(34,34,42,0.86)',
               color: 'white',
               backdropFilter: 'blur(4px)',
-              boxShadow: '0 8px 22px oklch(0 0 0 / 0.35), inset 0 0 0 1px oklch(1 0 0 / 0.12)',
+              boxShadow: '0 8px 22px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.12)',
               transition: 'transform 0.18s, background 0.18s',
-              fontSize: 20,
             }}
-          >▶</button>
+          >
+            <Icon name="play" size={22} />
+          </button>
         )}
+
         {dur && (
           <span style={{
             position: 'absolute', bottom: 11, right: 11, zIndex: 1,
             fontSize: 12, fontWeight: 600,
             color: 'white',
-            background: 'oklch(0.18 0.01 265 / 0.82)',
+            background: 'rgba(28,28,38,0.82)',
             padding: '3px 8px', borderRadius: 7,
           }}>{dur}</span>
         )}
@@ -176,24 +351,25 @@ function VideoCard({ video, onFav, onPlay, onRemove }: {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <StatusBadge state={state} />
           <div style={{ display: 'flex', gap: 6 }}>
-            {/* favourite */}
             <button
               onClick={() => onFav(video.videoId)}
-              aria-label={video.isFavorited ? 'Bỏ yêu thích' : 'Yêu thích'}
+              aria-label={video.isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+              className="lib-icon-btn"
               style={{
                 width: 32, height: 32, borderRadius: 9,
                 display: 'grid', placeItems: 'center',
                 border: `1px solid ${video.isFavorited ? 'transparent' : T.lineSoft}`,
-                background: video.isFavorited ? `color-mix(in oklch, ${T.rose} 14%, transparent)` : 'transparent',
-                color: video.isFavorited ? T.rose : T.text3,
+                background: video.isFavorited ? `color-mix(in srgb, ${T.coral} 14%, transparent)` : 'transparent',
+                color: video.isFavorited ? T.coral : T.text3,
                 cursor: 'pointer', transition: 'all 0.15s',
-                fontSize: 15,
               }}
-            >{video.isFavorited ? '♥' : '♡'}</button>
-            {/* remove */}
+            >
+              <Icon name="heart" size={17} fillCurrent={video.isFavorited} />
+            </button>
             <button
               onClick={() => onRemove(video.videoId)}
-              aria-label="Xoá khỏi thư viện"
+              aria-label="Remove from library"
+              className="lib-icon-btn"
               style={{
                 width: 32, height: 32, borderRadius: 9,
                 display: 'grid', placeItems: 'center',
@@ -201,40 +377,58 @@ function VideoCard({ video, onFav, onPlay, onRemove }: {
                 background: 'transparent',
                 color: T.text3,
                 cursor: 'pointer', transition: 'all 0.15s',
-                fontSize: 14,
+                fontSize: 16,
               }}
-            >×</button>
+            >
+              <Icon name="x" size={15} />
+            </button>
           </div>
         </div>
 
         <h3 style={{
-          margin: 0, fontSize: 15, fontWeight: 700, lineHeight: 1.34,
+          margin: 0, fontSize: 15, fontWeight: 500, lineHeight: 1.34,
           letterSpacing: '-0.01em', color: T.text,
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
         }}>{video.title}</h3>
 
         <p style={{ margin: 0, fontSize: 13, color: T.text2, display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', lineHeight: 1.3 }}>
           {processing ? (
-            <span style={{ color: T.text3 }}>Đang xử lý…</span>
+            <span style={{ color: T.text3 }}>Processing…</span>
           ) : (
             <>
-              <span>{video.sentenceCount} câu</span>
+              <span>{video.sentenceCount} sentences</span>
               <span style={{ color: T.text4 }}>·</span>
-              <span style={{ color: T.text3 }}>{video.lastStudiedAt ? `Học ${relativeTime(video.lastStudiedAt)}` : `Thêm ${relativeTime(video.addedAt)}`}</span>
+              <span style={{ color: T.text3 }}>{video.lastStudiedAt ? `Studied ${relativeTime(video.lastStudiedAt)}` : `Added ${relativeTime(video.addedAt)}`}</span>
             </>
           )}
         </p>
 
-        {!processing && (
+        {processing ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ height: 5, borderRadius: 5, background: T.surface3, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', width: '40%', borderRadius: 5,
+                background: `linear-gradient(90deg, transparent, ${T.coral}, transparent)`,
+                backgroundSize: '200% 100%',
+                animation: 'lib-shimmer 1.4s linear infinite',
+              }} />
+            </div>
+            <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, color: T.coral }}>
+              <Icon name="sparkles" size={14} /> Whisper is running…
+            </p>
+          </div>
+        ) : (
           <>
-            <ProgressBar
-              practiced={video.practicedCount}
-              total={video.sentenceCount}
-              color={done ? T.green : T.blue}
-            />
+            <ProgressBar practiced={video.practicedCount} total={video.sentenceCount} color={done ? T.teal : T.teal} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: done ? T.green : T.text2, display: 'inline-flex', alignItems: 'center', gap: 5, fontVariantNumeric: 'tabular-nums' }}>
-                {done && '✓ '}{video.practicedCount} / {video.sentenceCount} câu
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                fontSize: 12.5, fontWeight: 600,
+                color: done ? T.teal : T.text2,
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+                {done && <Icon name="check" size={13} />}
+                {video.practicedCount} / {video.sentenceCount} sentences
               </span>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {video.customTags.map(tag => (
@@ -247,16 +441,56 @@ function VideoCard({ video, onFav, onPlay, onRemove }: {
 
         <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 3 }}>
           {processing ? (
-            <button disabled style={{ flex: 1, height: 42, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 13.5, fontWeight: 600, borderRadius: 11, border: `1px solid ${T.lineSoft}`, background: T.surface2, color: T.text3, cursor: 'default' }}>
-              ⏱ Chờ xử lý
+            <button disabled style={{
+              flex: 1, height: 42, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+              fontSize: 13.5, fontWeight: 500, borderRadius: 11,
+              border: `1px solid ${T.lineSoft}`, background: T.surface2, color: T.text3, cursor: 'default',
+              fontFamily: 'inherit',
+            }}>
+              <Icon name="clock" size={15} /> Processing…
             </button>
           ) : (
-            <button
-              onClick={() => onPlay(video.videoId)}
-              style={{ flex: 1, height: 42, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 13.5, fontWeight: 600, borderRadius: 11, border: 'none', background: T.blue, color: 'white', cursor: 'pointer', boxShadow: `0 4px 12px color-mix(in oklch, ${T.blue} 30%, transparent)`, transition: 'all 0.15s' }}
-            >
-              {done ? '↺ Ôn lại' : '▶ Tiếp tục'}
-            </button>
+            <>
+              <button
+                onClick={() => onPlay(video.videoId)}
+                className="lib-btn-primary"
+                style={{
+                  flex: 1, height: 42, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                  fontSize: 13.5, fontWeight: 500, borderRadius: 11,
+                  border: 'none', background: T.ink, color: T.paper,
+                  cursor: 'pointer',
+                  boxShadow: '0 3px 10px rgba(44,44,42,0.18)',
+                  transition: 'all 0.15s', fontFamily: 'inherit',
+                }}
+              >
+                {done ? <><Icon name="rotate" size={15} /> Review</> : <><Icon name="play" size={14} /> Continue</>}
+              </button>
+              <button
+                onClick={() => onSave(video.videoId)}
+                className="lib-btn-soft"
+                style={{
+                  flex: 1, height: 42, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                  fontSize: 13.5, fontWeight: 500, borderRadius: 11,
+                  border: `1px solid ${T.lineSoft}`, background: T.surface2, color: T.text,
+                  cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'inherit',
+                }}
+              >
+                <Icon name="bookmark" size={15} /> Saved
+              </button>
+              <button
+                aria-label="More"
+                className="lib-btn-square"
+                style={{
+                  width: 42, height: 42, flexShrink: 0,
+                  display: 'grid', placeItems: 'center',
+                  fontSize: 13.5, fontWeight: 500, borderRadius: 11,
+                  border: `1px solid ${T.lineSoft}`, background: T.surface2, color: T.text3,
+                  cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'inherit',
+                }}
+              >
+                <Icon name="more" size={17} />
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -282,28 +516,35 @@ function AddCard({ onClick }: { onClick: () => void }) {
         width: '100%',
       }}
     >
-      <span style={{ width: 52, height: 52, borderRadius: 15, display: 'grid', placeItems: 'center', background: T.surface2, color: T.text2, fontSize: 24, transition: 'all 0.18s' }}>＋</span>
-      <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>Thêm video mới</span>
-      <span style={{ fontSize: 12.5 }}>Dán link YouTube để bắt đầu</span>
+      <span className="lib-add-plus" style={{
+        width: 52, height: 52, borderRadius: 15,
+        display: 'grid', placeItems: 'center',
+        background: T.surface2, color: T.text2,
+        transition: 'all 0.18s',
+      }}>
+        <Icon name="plus" size={24} />
+      </span>
+      <span style={{ fontSize: 15, fontWeight: 500, color: T.text }}>Add new video</span>
+      <span style={{ fontSize: 12.5 }}>Paste a YouTube link to get started</span>
     </button>
   )
 }
 
-// ── relative time (simple, no external lib) ──────────────────────────────────
+// ── helpers ───────────────────────────────────────────────────────────────────
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
   const m = Math.floor(diff / 60000)
-  if (m < 1) return 'vừa xong'
-  if (m < 60) return `${m} phút trước`
+  if (m < 1) return 'just now'
+  if (m < 60) return `${m}m ago`
   const h = Math.floor(m / 60)
-  if (h < 24) return `${h} giờ trước`
+  if (h < 24) return `${h}h ago`
   const d = Math.floor(h / 24)
-  if (d < 7) return `${d} ngày trước`
-  return `${Math.floor(d / 7)} tuần trước`
+  if (d < 7) return `${d}d ago`
+  return `${Math.floor(d / 7)}w ago`
 }
 
-// ── main component ───────────────────────────────────────────────────────────
+// ── main component ────────────────────────────────────────────────────────────
 
 export function LibraryClient({ initialVideos, apiBase }: Props) {
   const [videos, setVideos] = useState<LibraryVideo[]>(initialVideos)
@@ -321,10 +562,10 @@ export function LibraryClient({ initialVideos, apiBase }: Props) {
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const counts = useMemo(() => ({
-    all: videos.length,
+    all:      videos.length,
     learning: videos.filter(v => deriveCardState(v) === 'learning').length,
-    done: videos.filter(v => deriveCardState(v) === 'done').length,
-    fav: videos.filter(v => v.isFavorited).length,
+    done:     videos.filter(v => deriveCardState(v) === 'done').length,
+    fav:      videos.filter(v => v.isFavorited).length,
   }), [videos])
 
   const totalPracticed = useMemo(() => videos.reduce((s, v) => s + v.practicedCount, 0), [videos])
@@ -363,13 +604,16 @@ export function LibraryClient({ initialVideos, apiBase }: Props) {
     router.push(`/practice/${videoId}`)
   }
 
+  function handleSave(_videoId: string) {
+    router.push('/saved')
+  }
+
   function handleImported() {
     router.refresh()
-    showToast('Video đã thêm vào thư viện')
+    showToast('Video added to your library')
   }
 
   async function handleFav(videoId: string) {
-    // optimistic update
     setVideos(vs => vs.map(v => v.videoId === videoId ? { ...v, isFavorited: !v.isFavorited } : v))
     try {
       const token = await getToken()
@@ -378,9 +622,8 @@ export function LibraryClient({ initialVideos, apiBase }: Props) {
         headers: { Authorization: `Bearer ${token}` },
       })
     } catch {
-      // revert
       setVideos(vs => vs.map(v => v.videoId === videoId ? { ...v, isFavorited: !v.isFavorited } : v))
-      showToast('Không thể lưu yêu thích — thử lại')
+      showToast('Could not save favorite — try again')
     }
   }
 
@@ -388,7 +631,7 @@ export function LibraryClient({ initialVideos, apiBase }: Props) {
     const removed = videos.find(v => v.videoId === videoId)
     if (!removed) return
     setVideos(vs => vs.filter(v => v.videoId !== videoId))
-    showToast('Đã xoá khỏi thư viện')
+    showToast('Removed from library')
     try {
       const token = await getToken()
       const res = await fetch(`${apiBase}/api/library/${videoId}`, {
@@ -398,78 +641,141 @@ export function LibraryClient({ initialVideos, apiBase }: Props) {
       if (!res.ok) throw new Error()
     } catch {
       setVideos(vs => [removed, ...vs])
-      showToast('Không thể xoá — thử lại')
+      showToast('Could not remove — try again')
     }
   }
 
   const FILTERS: { id: FilterId; label: string }[] = [
-    { id: 'all', label: 'Tất cả' },
-    { id: 'learning', label: 'Đang học' },
-    { id: 'done', label: 'Hoàn thành' },
-    { id: 'fav', label: '♥ Yêu thích' },
+    { id: 'all',      label: 'All' },
+    { id: 'learning', label: 'Learning' },
+    { id: 'done',     label: 'Done' },
+    { id: 'fav',      label: 'Favorites' },
   ]
 
   return (
     <>
-      {/* keyframe animations injected via style tag */}
       <style>{`
-        @keyframes lib-spin { to { transform: rotate(360deg); } }
-        @keyframes lib-pulse { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
-        @keyframes lib-pop { from { opacity:0; transform: translateX(-50%) scale(0.96); } to { opacity:1; transform: translateX(-50%) scale(1); } }
-        .lib-card:hover { transform: translateY(-4px); border-color: ${T.line} !important; box-shadow: 0 2px 4px oklch(0 0 0 / 0.4), 0 20px 50px oklch(0 0 0 / 0.45); }
-        .lib-card:hover .lib-play-btn { background: ${T.blue} !important; transform: scale(1.08); }
-        .lib-add-card:hover { border-color: color-mix(in oklch, ${T.blue} 55%, transparent) !important; background: ${T.blueDim} !important; color: ${T.blue} !important; }
-        .lib-chip-on { background: ${T.blueDim} !important; border-color: color-mix(in oklch, ${T.blue} 45%, transparent) !important; color: ${T.blue} !important; }
+        @keyframes lib-spin    { to { transform: rotate(360deg); } }
+        @keyframes lib-pulse   { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
+        @keyframes lib-shimmer { 0% { background-position:-200% 0; } 100% { background-position:200% 0; } }
+        @keyframes lib-pop     { from { opacity:0; transform: scale(0.96); } to { opacity:1; transform: none; } }
+        @keyframes lib-fadeUp  { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: none; } }
+        @keyframes lib-toast   { from { opacity:0; transform: translateX(-50%) scale(0.96); } to { opacity:1; transform: translateX(-50%) scale(1); } }
+
+        @media (prefers-reduced-motion: no-preference) {
+          .lib-stat { animation: lib-fadeUp 0.5s cubic-bezier(.2,.7,.2,1) both; }
+          .lib-card { animation: lib-fadeUp 0.5s cubic-bezier(.2,.7,.2,1) both; }
+        }
+
+        .lib-card {
+          transition: transform 0.2s cubic-bezier(.2,.7,.2,1), border-color 0.2s, box-shadow 0.2s;
+        }
+        .lib-card:hover {
+          transform: translateY(-4px);
+          border-color: ${T.line} !important;
+          box-shadow: ${T.shadowLg};
+        }
+        .lib-card:hover .lib-play-btn {
+          transform: scale(1.08);
+          background: ${T.ink} !important;
+        }
+        .lib-icon-btn:hover {
+          color: ${T.text} !important;
+          border-color: ${T.line} !important;
+          background: ${T.surface2} !important;
+        }
+        .lib-btn-primary:hover { filter: brightness(1.15); transform: translateY(-1px); }
+        .lib-btn-soft:hover    { background: ${T.surface3} !important; border-color: ${T.line} !important; }
+        .lib-btn-square:hover  { background: ${T.surface3} !important; color: ${T.text} !important; border-color: ${T.line} !important; }
+        .lib-add-card:hover {
+          border-color: color-mix(in srgb, ${T.teal} 55%, transparent) !important;
+          background: ${T.tealDim} !important;
+          color: ${T.teal} !important;
+        }
+        .lib-add-card:hover .lib-add-plus {
+          background: ${T.ink} !important;
+          color: ${T.paper} !important;
+          transform: scale(1.05);
+        }
+        .lib-sort-item:hover { background: ${T.surface2} !important; color: ${T.text} !important; }
+        .lib-chip:hover { border-color: ${T.line} !important; color: ${T.text} !important; background: ${T.surface2} !important; }
+        .lib-chip-on {
+          background: ${T.tealDim} !important;
+          border-color: color-mix(in srgb, ${T.teal} 45%, transparent) !important;
+          color: ${T.teal} !important;
+        }
+        .lib-chip-on .lib-chip-count { background: color-mix(in srgb, ${T.teal} 22%, transparent) !important; color: ${T.teal} !important; }
+
+        @media (max-width: 980px) {
+          .lib-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .lib-stats { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+        @media (max-width: 720px) {
+          .lib-page { padding: 26px 18px 120px !important; }
+          .lib-masthead-spacer { display: none !important; }
+          .lib-filter-row { width: 100% !important; }
+          .lib-grid { grid-template-columns: 1fr !important; }
+          .lib-addbar { padding: 24px 18px 18px !important; }
+        }
       `}</style>
 
-      <div style={{ minHeight: '100vh', background: `radial-gradient(1200px 600px at 15% -10%, oklch(0.66 0.155 255 / 0.07), transparent 60%), radial-gradient(1000px 600px at 95% 0%, oklch(0.74 0.15 158 / 0.05), transparent 55%), ${T.bg}`, color: T.text, fontFamily: 'system-ui, sans-serif', WebkitFontSmoothing: 'antialiased' }}>
-        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '38px 32px 140px' }}>
+      <div style={{
+        minHeight: '100vh',
+        background: `radial-gradient(1200px 600px at 12% -10%, rgba(29,158,117,0.05), transparent 60%), radial-gradient(1000px 600px at 96% 0%, rgba(216,90,48,0.045), transparent 55%), ${T.bg}`,
+        backgroundAttachment: 'fixed',
+        color: T.text,
+        fontFamily: 'var(--font-be-vietnam-pro, system-ui, sans-serif)',
+        WebkitFontSmoothing: 'antialiased',
+      }}>
+        <div className="lib-page" style={{ maxWidth: 1180, margin: '0 auto', padding: '38px 32px 140px' }}>
 
           {/* masthead */}
           <header style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 22, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
-              <span style={{ width: 44, height: 44, borderRadius: 13, display: 'grid', placeItems: 'center', background: `linear-gradient(145deg, ${T.blue}, oklch(0.62 0.16 285))`, color: 'white', boxShadow: `0 6px 18px oklch(0.66 0.155 255 / 0.35), inset 0 1px 0 oklch(1 0 0 / 0.3)`, fontSize: 19 }}>🎧</span>
+              <span style={{
+                width: 44, height: 44, borderRadius: 13, display: 'grid', placeItems: 'center',
+                background: T.ink, color: T.paper,
+                boxShadow: '0 4px 12px rgba(44,44,42,0.22), inset 0 1px 0 rgba(255,255,255,0.08)',
+              }}>
+                <Icon name="headphones" size={19} />
+              </span>
               <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.25 }}>
-                <span style={{ fontWeight: 700, fontSize: 17, letterSpacing: '-0.01em' }}>Thư viện của bạn</span>
-                <span style={{ fontSize: 12.5, color: T.text3 }}>Luyện nghe &amp; nói qua video thật</span>
+                <span style={{ fontWeight: 600, fontSize: 17, letterSpacing: '-0.01em' }}>Your Library</span>
+                <span style={{ fontSize: 12.5, color: T.text3 }}>Practice listening &amp; speaking with real videos</span>
               </div>
             </div>
-            <div style={{ flex: '1 1 auto' }} />
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="lib-masthead-spacer" style={{ flex: '1 1 auto' }} />
+            <div className="lib-filter-row" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <button
                 onClick={handleSignOut}
+                className="lib-chip"
                 style={{
-                  height: 38, padding: '0 14px',
-                  borderRadius: 11,
-                  border: `1px solid ${T.lineSoft}`,
-                  background: 'transparent',
-                  color: T.text3,
-                  fontFamily: 'inherit', fontSize: 13.5, fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.16s ease',
+                  display: 'inline-flex', alignItems: 'center', height: 38, padding: '0 14px',
+                  borderRadius: 11, border: `1px solid ${T.lineSoft}`,
+                  background: T.surface, color: T.text3,
+                  fontFamily: 'inherit', fontSize: 13.5, fontWeight: 500, cursor: 'pointer',
+                  transition: 'all 0.16s',
                 }}
               >
-                Đăng xuất
+                Sign out
               </button>
               {FILTERS.map(f => (
                 <button
                   key={f.id}
                   onClick={() => setFilter(f.id)}
-                  className={filter === f.id ? 'lib-chip-on' : ''}
+                  className={`lib-chip${filter === f.id ? ' lib-chip-on' : ''}`}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 7,
-                    height: 38, padding: '0 14px',
-                    borderRadius: 11,
+                    height: 38, padding: '0 14px', borderRadius: 11,
                     border: `1px solid ${T.lineSoft}`,
-                    background: T.surface,
-                    color: T.text2,
-                    fontFamily: 'inherit', fontSize: 13.5, fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.16s ease',
+                    background: T.surface, color: T.text2,
+                    fontFamily: 'inherit', fontSize: 13.5, fontWeight: 500,
+                    cursor: 'pointer', transition: 'all 0.16s',
                   }}
                 >
+                  {f.id === 'fav' && <Icon name="heart" size={14} fillCurrent={filter === 'fav'} />}
                   {f.label}
-                  <span style={{ fontSize: 11.5, fontWeight: 700, color: T.text4, background: T.bg2, padding: '1px 7px', borderRadius: 20, minWidth: 20, textAlign: 'center' }}>
+                  <span className="lib-chip-count" style={{ fontSize: 11.5, fontWeight: 600, color: T.text4, background: T.bg2, padding: '1px 7px', borderRadius: 20, minWidth: 20, textAlign: 'center' }}>
                     {counts[f.id]}
                   </span>
                 </button>
@@ -479,53 +785,57 @@ export function LibraryClient({ initialVideos, apiBase }: Props) {
 
           {/* search + sort */}
           <div style={{ display: 'flex', gap: 12, marginBottom: 26 }}>
-            <label style={{ flex: '1 1 auto', display: 'flex', alignItems: 'center', gap: 11, height: 52, padding: '0 16px', borderRadius: 14, background: T.surface, border: `1px solid ${T.lineSoft}`, color: T.text3 }}>
-              <span>🔍</span>
+            <label style={{
+              flex: '1 1 auto', display: 'flex', alignItems: 'center', gap: 11,
+              height: 52, padding: '0 16px', borderRadius: 14,
+              background: T.surface, border: `1px solid ${T.lineSoft}`, color: T.text3,
+            }}>
+              <Icon name="search" size={18} />
               <input
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder="Tìm video, chủ đề…"
+                placeholder="Search videos, topics, sources…"
                 style={{ flex: 1, border: 'none', background: 'none', outline: 'none', fontFamily: 'inherit', fontSize: 15, color: T.text }}
               />
               {query && (
-                <button onClick={() => setQuery('')} style={{ width: 26, height: 26, borderRadius: 7, border: 'none', background: T.surface3, color: T.text2, cursor: 'pointer', fontSize: 14 }}>×</button>
+                <button
+                  onClick={() => setQuery('')}
+                  style={{ width: 26, height: 26, borderRadius: 7, border: 'none', background: T.surface3, color: T.text2, cursor: 'pointer', display: 'grid', placeItems: 'center' }}
+                >
+                  <Icon name="x" size={15} />
+                </button>
               )}
             </label>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 9, height: 52, padding: '0 14px', borderRadius: 14, background: T.surface, border: `1px solid ${T.lineSoft}`, color: T.text3 }}>
-              <select
-                value={sort}
-                onChange={e => setSort(e.target.value as SortId)}
-                style={{ appearance: 'none', border: 'none', background: 'none', outline: 'none', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, color: T.text, cursor: 'pointer' }}
-              >
-                <option value="recent">Mới học nhất</option>
-                <option value="progress">Tiến độ nhiều nhất</option>
-              </select>
-              <span style={{ pointerEvents: 'none', fontSize: 12 }}>▾</span>
-            </div>
+            <SortMenu value={sort} onChange={setSort} />
           </div>
 
           {/* stats */}
-          <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 30 }}>
-            <StatCard icon="📚" label="Tổng video"     value={counts.all}        accent={T.blue}  />
-            <StatCard icon="🏆" label="Hoàn thành"     value={counts.done}       accent={T.green} />
-            <StatCard icon="📖" label="Câu đã luyện"   value={totalPracticed}    accent={T.blue}  />
-            <StatCard icon="♥"  label="Yêu thích"      value={counts.fav}        accent={T.rose}  />
+          <section className="lib-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 30 }}>
+            <StatCard icon="layers"  label="Total Videos"       value={counts.all}     accent={T.text2}  delay={30}  />
+            <StatCard icon="trophy"  label="Completed"          value={counts.done}    accent={T.purple} delay={80}  />
+            <StatCard icon="book"    label="Sentences Practiced" value={totalPracticed} accent={T.coral}  delay={130} />
+            <StatCard icon="flame"   label="Favorites"          value={counts.fav}     accent={T.teal}   delay={180} />
           </section>
 
           {/* grid */}
           {visible.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '70px 20px', textAlign: 'center' }}>
-              <span style={{ width: 60, height: 60, borderRadius: 18, display: 'grid', placeItems: 'center', background: T.surface, border: `1px solid ${T.lineSoft}`, color: T.text3, fontSize: 26 }}>🔍</span>
-              <p style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>Không tìm thấy video nào</p>
-              <p style={{ margin: '0 0 10px', fontSize: 14, color: T.text3 }}>Thử từ khoá khác hoặc đổi bộ lọc.</p>
-              <button onClick={() => { setQuery(''); setFilter('all') }} style={{ height: 42, padding: '0 18px', borderRadius: 11, border: `1px solid ${T.lineSoft}`, background: T.surface2, color: T.text, fontFamily: 'inherit', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>
-                Xoá bộ lọc
+              <span style={{ width: 60, height: 60, borderRadius: 18, display: 'grid', placeItems: 'center', background: T.surface, border: `1px solid ${T.lineSoft}`, color: T.text3 }}>
+                <Icon name="search" size={26} />
+              </span>
+              <p style={{ margin: 0, fontSize: 17, fontWeight: 500 }}>No videos found</p>
+              <p style={{ margin: '0 0 10px', fontSize: 14, color: T.text3 }}>Try a different keyword or change the filter.</p>
+              <button
+                onClick={() => { setQuery(''); setFilter('all') }}
+                style={{ height: 42, padding: '0 18px', borderRadius: 11, border: `1px solid ${T.lineSoft}`, background: T.surface2, color: T.text, fontFamily: 'inherit', fontSize: 13.5, fontWeight: 500, cursor: 'pointer' }}
+              >
+                Clear filters
               </button>
             </div>
           ) : (
-            <section style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
-              {visible.map(v => (
-                <VideoCard key={v.videoId} video={v} onFav={handleFav} onPlay={handlePlay} onRemove={handleRemove} />
+            <section className="lib-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+              {visible.map((v, i) => (
+                <VideoCard key={v.videoId} video={v} index={i} onFav={handleFav} onPlay={handlePlay} onSave={handleSave} onRemove={handleRemove} />
               ))}
               {filter === 'all' && !query && <AddCard onClick={() => addBarRef.current?.focus()} />}
             </section>
@@ -534,7 +844,15 @@ export function LibraryClient({ initialVideos, apiBase }: Props) {
       </div>
 
       {/* fixed add bar */}
-      <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 20, background: `linear-gradient(180deg, transparent, ${T.bg} 38%)`, padding: '30px 32px 22px', pointerEvents: 'none' }}>
+      <div
+        className="lib-addbar"
+        style={{
+          position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 20,
+          background: `linear-gradient(180deg, transparent, ${T.bg} 38%)`,
+          padding: '30px 32px 22px',
+          pointerEvents: 'none',
+        }}
+      >
         <div style={{ maxWidth: 1180, margin: '0 auto', display: 'flex', gap: 12, pointerEvents: 'auto' }}>
           <ImportBar apiBase={apiBase} onImported={handleImported} inputRef={addBarRef} />
         </div>
@@ -543,7 +861,7 @@ export function LibraryClient({ initialVideos, apiBase }: Props) {
       {/* toast */}
       {toast && (
         <div key={toast.id} style={{
-          position: 'fixed', left: '50%', bottom: 100, transform: 'translateX(-50%)',
+          position: 'fixed', left: '50%', bottom: 100,
           zIndex: 40,
           display: 'flex', alignItems: 'center', gap: 10,
           padding: '13px 18px',
@@ -551,10 +869,11 @@ export function LibraryClient({ initialVideos, apiBase }: Props) {
           border: `1px solid ${T.line}`,
           borderRadius: 13,
           fontSize: 14, fontWeight: 600, color: T.text,
-          boxShadow: '0 2px 4px oklch(0 0 0 / 0.4), 0 20px 50px oklch(0 0 0 / 0.45)',
-          animation: 'lib-pop 0.3s cubic-bezier(.2,.7,.2,1) both',
+          boxShadow: T.shadowLg,
+          animation: 'lib-toast 0.3s cubic-bezier(.2,.7,.2,1) both',
           whiteSpace: 'nowrap',
         }}>
+          <Icon name="check" size={16} />
           {toast.msg}
         </div>
       )}

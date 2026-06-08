@@ -16,7 +16,7 @@ export interface LibraryVideo {
 }
 
 export type FilterId = 'all' | 'learning' | 'done' | 'fav'
-export type SortId = 'recent' | 'progress'
+export type SortId = 'recent' | 'progress' | 'duration' | 'az'
 
 export function deriveCardState(v: LibraryVideo): CardState {
   if (v.transcriptStatus === 'processing' || v.transcriptStatus === 'queued') return 'processing'
@@ -39,6 +39,12 @@ export function applySort(videos: LibraryVideo[], sort: SortId): LibraryVideo[] 
       const pA = a.sentenceCount ? a.practicedCount / a.sentenceCount : 0
       const pB = b.sentenceCount ? b.practicedCount / b.sentenceCount : 0
       return pB - pA
+    }
+    if (sort === 'duration') {
+      return (b.durationSeconds ?? 0) - (a.durationSeconds ?? 0)
+    }
+    if (sort === 'az') {
+      return a.title.localeCompare(b.title, 'vi')
     }
     const tA = a.lastStudiedAt ?? a.addedAt
     const tB = b.lastStudiedAt ?? b.addedAt

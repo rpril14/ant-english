@@ -12,21 +12,23 @@ interface Props {
 }
 
 const statusLabel: Record<JobStatus, string> = {
-  queued: 'Đang xếp hàng…',
-  processing: 'Đang xử lý…',
-  ready: 'Hoàn thành!',
-  failed: 'Thất bại — vui lòng thử lại',
+  queued: 'Queued…',
+  processing: 'Processing…',
+  ready: 'Done!',
+  failed: 'Failed — please try again',
 }
 
 const T = {
-  surface2: 'oklch(0.248 0.009 265)',
-  line:     'oklch(0.32 0.010 265)',
-  text:     'oklch(0.97 0.004 265)',
-  text4:    'oklch(0.50 0.008 265)',
-  blue:     'oklch(0.66 0.155 255)',
-  blueDim:  'oklch(0.66 0.155 255 / 0.14)',
-  rose:     'oklch(0.68 0.18 18)',
-  amber:    'oklch(0.78 0.14 75)',
+  surface2: '#F3F1EA',
+  line:     '#D3D1C7',
+  text:     '#2C2C2A',
+  text4:    '#A6A59C',
+  blue:     '#1D9E75',
+  blueDim:  'rgba(29,158,117,0.13)',
+  rose:     '#D85A30',
+  amber:    '#D85A30',
+  ink:      '#2C2C2A',
+  paper:    '#F6F4ED',
 }
 
 /**
@@ -97,18 +99,23 @@ export function ImportBar({ apiBase, onImported, inputRef }: Props) {
           borderRadius: 16,
           background: T.surface2,
           border: `1px solid ${T.line}`,
-          boxShadow: '0 1px 2px oklch(0 0 0 / 0.4), 0 8px 24px oklch(0 0 0 / 0.28)',
+          boxShadow: '0 1px 2px rgba(44,44,42,0.05), 0 6px 20px rgba(44,44,42,0.06)',
           opacity: busy ? 0.6 : 1,
           transition: 'opacity 0.15s',
         }}>
-          <span style={{ color: T.rose, display: 'grid', placeItems: 'center', fontSize: 20 }}>▶</span>
+          <span style={{ color: T.rose, display: 'grid', placeItems: 'center' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="6" width="18" height="12" rx="3.5"/>
+              <path d="M10.5 9.5v5l4-2.5z" fill="currentColor" stroke="none"/>
+            </svg>
+          </span>
           <input
             ref={inputRef}
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !busy && handleSubmit(e as unknown as FormEvent)}
-            placeholder="Dán link YouTube vào đây…"
+            placeholder="Paste a YouTube link…"
             disabled={busy}
             required
             style={{ flex: 1, border: 'none', background: 'none', outline: 'none', fontFamily: 'inherit', fontSize: 15, color: T.text, caretColor: T.blue }}
@@ -119,28 +126,32 @@ export function ImportBar({ apiBase, onImported, inputRef }: Props) {
           disabled={busy}
           style={{
             height: 56, padding: '0 24px',
-            background: busy ? `color-mix(in oklch, ${T.blue} 60%, transparent)` : T.blue,
-            color: 'white',
+            background: busy ? `color-mix(in srgb, ${T.ink} 60%, transparent)` : T.ink,
+            color: T.paper,
             borderRadius: 16,
             border: 'none',
-            fontFamily: 'inherit', fontSize: 14.5, fontWeight: 700,
+            fontFamily: 'inherit', fontSize: 14.5, fontWeight: 500,
             cursor: busy ? 'not-allowed' : 'pointer',
-            boxShadow: busy ? 'none' : `0 1px 2px oklch(0 0 0 / 0.4), 0 6px 18px oklch(0.66 0.155 255 / 0.35)`,
+            boxShadow: busy ? 'none' : '0 1px 2px rgba(44,44,42,0.05), 0 4px 14px rgba(44,44,42,0.2)',
             whiteSpace: 'nowrap',
             transition: 'all 0.15s',
+            display: 'inline-flex', alignItems: 'center', gap: 8,
           }}
         >
-          ＋ Thêm vào library
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 5v14"/><path d="M5 12h14"/>
+          </svg>
+          Add to library
         </button>
       </form>
 
       {jobStatus && jobStatus !== 'ready' && (
-        <p style={{ marginTop: 8, fontSize: 13, color: jobStatus === 'failed' ? 'oklch(0.65 0.18 25)' : T.amber }}>
+        <p style={{ marginTop: 8, fontSize: 13, color: jobStatus === 'failed' ? '#C0392B' : T.amber }}>
           {statusLabel[jobStatus]}
         </p>
       )}
 
-      {error && <p style={{ marginTop: 8, fontSize: 13, color: 'oklch(0.65 0.18 25)' }}>{error}</p>}
+      {error && <p style={{ marginTop: 8, fontSize: 13, color: '#C0392B' }}>{error}</p>}
     </div>
   )
 }
