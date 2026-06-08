@@ -46,8 +46,20 @@ public class LibraryService(AntDbContext db) : ILibraryService
 
         if (uv is null) return false;
 
+        await using var tx = await db.Database.BeginTransactionAsync();
+
+        await db.UserProgresses
+            .Where(up => up.UserId == userId && up.Sentence.VideoId == videoId)
+            .ExecuteDeleteAsync();
+
+        await db.SavedSentences
+            .Where(ss => ss.UserId == userId && ss.Sentence.VideoId == videoId)
+            .ExecuteDeleteAsync();
+
         db.UserVideos.Remove(uv);
         await db.SaveChangesAsync();
+
+        await tx.CommitAsync();
         return true;
     }
 }
