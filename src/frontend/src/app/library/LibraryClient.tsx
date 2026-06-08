@@ -265,7 +265,7 @@ function VideoCard({ video, onFav, onPlay, onSave, onRemove, index }: {
   video: LibraryVideo
   onFav: (id: string) => void
   onPlay: (id: string) => void
-  onSave: (id: string) => void
+  onSave: () => void
   onRemove: (id: string) => void
   index: number
 }) {
@@ -466,7 +466,7 @@ function VideoCard({ video, onFav, onPlay, onSave, onRemove, index }: {
                 {done ? <><Icon name="rotate" size={15} /> Review</> : <><Icon name="play" size={14} /> Continue</>}
               </button>
               <button
-                onClick={() => onSave(video.videoId)}
+                onClick={() => onSave()}
                 className="lib-btn-soft"
                 style={{
                   flex: 1, height: 42, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
@@ -604,7 +604,7 @@ export function LibraryClient({ initialVideos, apiBase }: Props) {
     router.push(`/practice/${videoId}`)
   }
 
-  function handleSave(_videoId: string) {
+  function handleSave() {
     router.push('/saved')
   }
 
