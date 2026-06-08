@@ -3,25 +3,76 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* warm paper base */
+  --bg:        #F1EFE8;
+  --bg-2:      #E9E7DE;
+  --surface:   #FBFAF6;
+  --surface-2: #F3F1EA;
+  --surface-3: #ECEAE1;
+  --line:      #D3D1C7;
+  --line-soft: #E1DFD5;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* ink */
+  --text:      #2C2C2A;
+  --text-2:    #56554F;
+  --text-3:    #84837B;
+  --text-4:    #A6A59C;
+  --ink:       #2C2C2A;
+  --paper:     #F6F4ED;
+
+  /* semantic accents — no blue */
+  --teal:       #1D9E75;
+  --teal-dim:   rgba(29,158,117,0.13);
+  --coral:      #D85A30;
+  --coral-dim:  rgba(216,90,48,0.12);
+  --purple:     #7F77DD;
+  --purple-dim: rgba(127,119,221,0.15);
+
+  /* functional feedback */
+  --gold:     #C99A2E;
+  --gold-dim: rgba(201,154,46,0.16);
+  --red:      #C0473A;
+  --red-dim:  rgba(192,71,58,0.12);
+
+  --radius:    16px;
+  --radius-sm: 11px;
+  --shadow:    0 1px 2px rgba(44,44,42,0.05), 0 6px 20px rgba(44,44,42,0.06);
+  --shadow-lg: 0 2px 6px rgba(44,44,42,0.07), 0 18px 44px rgba(44,44,42,0.12);
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-be-vietnam-pro), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection { background: var(--teal-dim); }
+
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-4);
+  background-clip: padding-box;
+}
+
+@keyframes flashRed {
+  0%,100% { box-shadow: 0 0 0 0 transparent; }
+  30%      { box-shadow: 0 0 0 3px var(--red-dim); }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+  .text-balance { text-wrap: balance; }
 }
