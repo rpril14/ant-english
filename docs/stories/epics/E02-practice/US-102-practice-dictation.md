@@ -34,6 +34,7 @@ As Alex, I want to type what I hear sentence by sentence and see which words I g
 - Enter or Next → advances only if sentence is completed; otherwise chips flash red
 - Progress saved on advance
 - Player auto-plays the next sentence immediately on advance
+- Input field auto-focuses on the new sentence so the learner can type immediately
 
 **AC-102-6 — Replay sentence**
 - Ctrl+R or Replay button → seeks to `sentence[i].start_time_ms`; input preserved

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactPlayer from 'react-player'
 import type { Sentence, ProgressRow } from './page'
+import styles from './practice.module.css'
 
 interface Props {
   video: { id: string; title: string; youtube_id: string }
@@ -17,7 +18,55 @@ interface Props {
   apiBase: string
 }
 
-const DOT = '·'
+// ── Small icon components ─────────────────────────────────────────────────────
+
+function CheckIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12.5l4.5 4.5L19 7" />
+    </svg>
+  )
+}
+
+function ChevronLeftIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  )
+}
+
+function ArrowRightIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14" /><path d="m13 6 6 6-6 6" />
+    </svg>
+  )
+}
+
+function RotateIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12a9 9 0 1 1-3-6.7" /><path d="M21 4v5h-5" />
+    </svg>
+  )
+}
+
+function SparklesIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3zM18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8L18 14z" />
+    </svg>
+  )
+}
+
+function BookmarkIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 4h12v16l-6-4-6 4z" />
+    </svg>
+  )
+}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -37,10 +86,8 @@ export function PracticeClient({
   const [saveToast, setSaveToast] = useState<string | null>(null)
   const saveToastTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
-  // Hint state — resets on sentence change
   const [showTranslation, setShowTranslation] = useState(true)
 
-  // Initialise from localStorage after mount (avoid SSR mismatch)
   useEffect(() => {
     setShowTranslation(getTranslationVisible())
   }, [])
@@ -57,15 +104,14 @@ export function PracticeClient({
   const [hintLevel, setHintLevel] = useState(0)
 
   const playerRef = useRef<HTMLVideoElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const hasPausedRef = useRef(false)
   const isInitialMount = useRef(true)
 
   const sentence = sentences[currentIdx]
   const result = sentence ? match(input, sentence.text, sentence.named_entities) : null
 
-  // ── Reset hint/reveal state on sentence change; seek only on initial mount ──
-  // advance() and jumpTo() handle seek+play directly; re-seeking here would
-  // interrupt playback without resuming it.
+  // ── Reset hint/reveal state on sentence change ────────────────────────────
 
   useEffect(() => {
     hasPausedRef.current = false
@@ -113,7 +159,6 @@ export function PracticeClient({
 
   const advance = useCallback((score: number, completed: boolean) => {
     if (!sentence) return
-
     const nextIdx = currentIdx + 1
     if (nextIdx < sentences.length) {
       setCurrentIdx(nextIdx)
@@ -127,7 +172,7 @@ export function PracticeClient({
     saveProgress(sentence.id, score, completed, hintLevel)
   }, [sentence, currentIdx, sentences, saveProgress, hintLevel])
 
-  // ── Hint functions (AC-103-1, AC-103-2, AC-103-3) ────────────────────────
+  // ── Hint functions ────────────────────────────────────────────────────────
 
   function activateFirstLetter() {
     if (!result) return
@@ -140,7 +185,7 @@ export function PracticeClient({
     }
   }
 
-  // ── Jump to sentence (AC-108-2) ───────────────────────────────────────────
+  // ── Jump to sentence ──────────────────────────────────────────────────────
 
   const jumpTo = useCallback((idx: number) => {
     setCurrentIdx(idx)
@@ -157,7 +202,7 @@ export function PracticeClient({
     setHintLevel(prev => Math.max(prev, 2))
   }
 
-  // ── Auto-complete at 95% — mark done, show translation, wait for manual Next ──
+  // ── Auto-complete at 95% ──────────────────────────────────────────────────
 
   useEffect(() => {
     if (!result || !sentence) return
@@ -168,7 +213,7 @@ export function PracticeClient({
     }
   }, [result?.score, result?.chips.length, hintLevel]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Video: pause at sentence end (AC-102-1) ───────────────────────────────
+  // ── Video: pause at sentence end ──────────────────────────────────────────
 
   function handleTimeUpdate(e: React.SyntheticEvent<HTMLVideoElement>) {
     if (!sentence || hasPausedRef.current) return
@@ -179,15 +224,13 @@ export function PracticeClient({
     }
   }
 
-  // ── User-initiated play: treat as replay when paused at sentence end ───────
-
   function handlePlay() {
     if (!hasPausedRef.current || !playerRef.current || !sentence) return
     hasPausedRef.current = false
     playerRef.current.currentTime = sentence.start_time_ms / 1000
   }
 
-  // ── Replay (AC-102-6) ─────────────────────────────────────────────────────
+  // ── Replay ────────────────────────────────────────────────────────────────
 
   const replay = useCallback(() => {
     if (!sentence || !playerRef.current) return
@@ -198,7 +241,6 @@ export function PracticeClient({
 
   const toggleSave = useCallback(async (sentenceId: string) => {
     const isSaved = savedIds.has(sentenceId)
-    // optimistic
     setSavedIds(prev => {
       const next = new Set(prev)
       if (isSaved) next.delete(sentenceId)
@@ -226,7 +268,6 @@ export function PracticeClient({
         })
       }
     } catch {
-      // revert on failure
       setSavedIds(prev => {
         const next = new Set(prev)
         if (isSaved) next.add(sentenceId)
@@ -253,17 +294,22 @@ export function PracticeClient({
     function onKeyDown(e: KeyboardEvent) {
       if (e.ctrlKey && e.key === 'r') { e.preventDefault(); replay() }
       if (e.altKey && e.key === 'h')  { e.preventDefault(); activateFirstLetter() }
+      if (e.ctrlKey && e.key === 's') { e.preventDefault(); if (sentence) toggleSave(sentence.id) }
       if (e.key === 'Enter') { e.preventDefault(); tryAdvance() }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [replay, tryAdvance]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [replay, tryAdvance, sentence]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 60)
+  }, [currentIdx])
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   if (sentences.length === 0) {
     return (
-      <div className="flex h-screen items-center justify-center text-gray-400">
+      <div className={styles.emptyState}>
         This video has no sentences yet.
       </div>
     )
@@ -272,226 +318,297 @@ export function PracticeClient({
   const sentenceCompleted = sentence ? !!progress[sentence.id]?.completed_at : false
   const isLast = currentIdx === sentences.length - 1
   const effectiveScore = result ? applyScoreCap(result.score, hintLevel) : 0
+  const typing = input.trim().length > 0 && !sentenceCompleted
 
   const sidebarItems = deriveSidebar(sentences, sentence?.id ?? '', progress)
   const completedCount = sidebarItems.filter(i => i.state === 'completed').length
   const pct = Math.round((completedCount / sentences.length) * 100)
 
+  const isSaved = sentence ? savedIds.has(sentence.id) : false
+  const hasFirstLetterHint = firstLetterIndices.size > 0
+
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-900 text-gray-100">
+    <div className={styles.layout}>
 
-      {/* ── Sidebar (AC-108-1, AC-108-3) ──────────────────────────────────── */}
-      <aside className="w-80 shrink-0 border-r border-gray-700 flex flex-col">
-
-        {/* Progress header (AC-108-3) */}
-        <div className="p-4 border-b border-gray-700">
-          <p className="text-sm font-medium text-gray-300">
-            {completedCount} / {sentences.length}
-          </p>
-          <div className="mt-2 h-1.5 w-full rounded-full bg-gray-700">
-            <div className="h-full rounded-full bg-blue-500 transition-all" style={{ width: `${pct}%` }} />
+      {/* ── Sidebar ─────────────────────────────────────────────────────── */}
+      <aside className={styles.sidebar}>
+        <div className={styles.sideHead}>
+          <div className={styles.progressRow}>
+            <span className={styles.progressLabel}>Progress</span>
+            <span className={styles.progressNum}>
+              <b>{completedCount}</b> / {sentences.length}
+            </span>
+          </div>
+          <div className={styles.progressBar}>
+            <div className={styles.progressFill} style={{ width: `${pct}%` }} />
           </div>
         </div>
 
-        {/* Sentence list */}
-        <div className="flex-1 overflow-y-auto">
+        <div className={styles.sideList}>
           {sidebarItems.map((item, idx) => (
             <button
               key={item.id}
               onClick={() => jumpTo(idx)}
-              className={`w-full flex items-start gap-2 px-3 py-2.5 text-left border-b border-gray-800 hover:bg-gray-800 transition-colors ${
-                item.state === 'current' ? 'bg-gray-800' : ''
-              }`}
+              className={[
+                styles.sRow,
+                item.state === 'current' ? styles.sRowCurrent : '',
+                item.state === 'completed' ? styles.sRowDone : '',
+              ].join(' ')}
             >
-              <span className="shrink-0 mt-0.5 text-xs text-gray-500 w-6">#{item.index + 1}</span>
-              {item.state === 'completed' ? (
-                <span className="flex-1 text-xs text-gray-300 line-clamp-2">{item.text}</span>
-              ) : (
-                <span className="flex-1 text-xs text-gray-600 select-none tracking-wide">
-                  {item.text.trim().split(/\s+/).map(w => '*'.repeat(w.replace(/[^a-zA-Z0-9]/g, '').length || 1)).join(' ')}
-                </span>
-              )}
+              <span className={styles.sRowIdx}>#{item.index + 1}</span>
+              <span className={styles.sRowText}>
+                {item.state === 'completed' ? (
+                  item.text
+                ) : (
+                  item.text.trim().split(/\s+/).map((w, k) => (
+                    <span key={k} className={styles.mask}>
+                      {'*'.repeat(Math.max(2, w.replace(/[^a-zA-Z0-9]/g, '').length || 2))}
+                    </span>
+                  ))
+                )}
+              </span>
               {item.state === 'completed' && (
-                <span className="shrink-0 text-green-400 text-xs">✓</span>
+                <span className={styles.sRowCheck}><CheckIcon /></span>
               )}
             </button>
           ))}
         </div>
       </aside>
 
-      {/* ── Practice area ──────────────────────────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto">
-      <div className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-6">
+      {/* ── Practice area ───────────────────────────────────────────────── */}
+      <main className={styles.main}>
+        <div className={styles.mainInner}>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="truncate text-base font-semibold">{video.title}</h1>
-        <span className="shrink-0 text-sm text-gray-400">
-          {currentIdx + 1} / {sentences.length}
-        </span>
-      </div>
+          {/* Header */}
+          <header className={styles.practiceHead}>
+            <a href="/library" className={styles.backLink}>
+              <ChevronLeftIcon /> Library
+            </a>
+            <h1 className={styles.practiceTitle}>{video.title}</h1>
+            <span className={styles.practiceCounter}>{currentIdx + 1} / {sentences.length}</span>
+          </header>
 
-      {/* Player */}
-      <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
-        <ReactPlayer
-          ref={playerRef}
-          src={`https://www.youtube.com/watch?v=${video.youtube_id}`}
-          controls
-          width="100%"
-          height="100%"
-          onTimeUpdate={handleTimeUpdate}
-          onPlay={handlePlay}
-        />
-      </div>
+          {/* Player */}
+          <div className={styles.player}>
+            <div className={styles.playerContainer}>
+              <ReactPlayer
+                ref={playerRef}
+                src={`https://www.youtube.com/watch?v=${video.youtube_id}`}
+                controls
+                width="100%"
+                height="100%"
+                onTimeUpdate={handleTimeUpdate}
+                onPlay={handlePlay}
+              />
+            </div>
+          </div>
 
-      {/* Stats row */}
-      {result && (
-        <div className="flex items-center gap-3 text-sm text-gray-400">
-          <span>{result.correctCount}/{result.totalCount} words</span>
-          <span>Match: <span className={effectiveScore >= 95 ? 'text-green-400 font-medium' : ''}>{effectiveScore}%</span></span>
-          {hintLevel === 3 && (
-            <span className="text-yellow-400">Score capped at 60% — answer revealed</span>
+          {/* Stats row */}
+          <div className={[styles.statsRow, (typing || sentenceCompleted) ? styles.statsRowVisible : ''].join(' ')}>
+            {!sentenceCompleted && result && (
+              <>
+                <span><b>{result.correctCount}</b>/{result.totalCount} words</span>
+                <span>
+                  Match:{' '}
+                  <b className={effectiveScore >= 95 ? styles.statMatchOk : ''}>
+                    {effectiveScore}%
+                  </b>
+                </span>
+                {hintLevel >= 3 && (
+                  <span className={styles.statWarn}>Score capped at 60% — answer revealed</span>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Word chips */}
+          <div className={[styles.chips, chipsError ? styles.chipsFlash : ''].join(' ')}>
+            {result?.chips.map((chip, i) => {
+              const isRevealed = revealedIndices.has(i)
+              if (chip.status === 'correct') {
+                return (
+                  <button key={i} className={[styles.chip, styles.chipCorrect].join(' ')} tabIndex={-1}>
+                    {chip.display}
+                  </button>
+                )
+              }
+              if (chip.status === 'incorrect') {
+                return (
+                  <button
+                    key={i}
+                    className={[styles.chip, styles.chipWrong].join(' ')}
+                    onClick={() => revealChip(i)}
+                    tabIndex={-1}
+                    title="Click to reveal"
+                  >
+                    {chip.typed}
+                    {chip.dotCount > 0 && (
+                      <span className={styles.chipDots} style={{ marginLeft: chip.typed ? '4px' : 0 }}>
+                        {Array.from({ length: chip.dotCount }).map((_, k) => (
+                          <span key={k} className={styles.dot} />
+                        ))}
+                      </span>
+                    )}
+                  </button>
+                )
+              }
+              if (chip.status === 'active') {
+                if (isRevealed) {
+                  return (
+                    <button key={i} className={[styles.chip, styles.chipRevealed].join(' ')} tabIndex={-1}>
+                      {chip.display}
+                    </button>
+                  )
+                }
+                return (
+                  <button key={i} className={[styles.chip, styles.chipActive].join(' ')} tabIndex={-1}>
+                    {chip.typed}
+                    {chip.dotCount > 0 && (
+                      <span className={styles.chipDots} style={{ marginLeft: chip.typed ? '4px' : 0 }}>
+                        {Array.from({ length: chip.dotCount }).map((_, k) => (
+                          <span key={k} className={styles.dot} />
+                        ))}
+                      </span>
+                    )}
+                  </button>
+                )
+              }
+              // pending — show revealed (purple) if the user clicked it, otherwise dashed dots
+              if (isRevealed) {
+                return (
+                  <button key={i} className={[styles.chip, styles.chipRevealed].join(' ')} tabIndex={-1}>
+                    {chip.display}
+                  </button>
+                )
+              }
+              const hasHint = firstLetterIndices.has(i)
+              const dotCount = Math.max(0, chip.dotCount - (hasHint ? 1 : 0))
+              return (
+                <button
+                  key={i}
+                  className={[styles.chip, styles.chipPending].join(' ')}
+                  onClick={() => revealChip(i)}
+                  tabIndex={-1}
+                  title="Click to reveal"
+                >
+                  <span className={styles.chipDots}>
+                    {hasHint && (
+                      <span className={styles.chipHintLetter}>{chip.display[0]}</span>
+                    )}
+                    {Array.from({ length: dotCount }).map((_, k) => (
+                      <span key={k} className={styles.dot} />
+                    ))}
+                  </span>
+                </button>
+              )
+            })}
+            {sentenceCompleted && (
+              <span className={styles.chipDone}>
+                <CheckIcon /> Completed
+              </span>
+            )}
+          </div>
+
+          {/* Named entities */}
+          {sentence?.named_entities && sentence.named_entities.length > 0 && (
+            <div className={styles.entities}>
+              <span className={styles.entitiesLabel}>Proper nouns:</span>
+              {sentence.named_entities.map((name, i) => (
+                <span key={i} className={styles.entity}>{name}</span>
+              ))}
+            </div>
           )}
-        </div>
-      )}
 
-      {/* Word chips */}
-      <div className={`flex flex-wrap gap-2 min-h-[2.75rem] rounded-lg p-1 transition-colors ${chipsError ? 'outline outline-2 outline-red-500 bg-red-500/5' : ''}`}>
-        {result?.chips.map((chip, i) => {
-          if (revealedIndices.has(i)) {
-            return <span key={i} className="rounded-lg px-3 py-1 text-sm font-medium bg-blue-500/40 text-blue-200">{chip.display}</span>
-          }
-          if (chip.status === 'correct') {
-            return <span key={i} className="rounded-lg px-3 py-1 text-sm font-medium bg-green-500 text-white">{chip.display}</span>
-          }
-          if (chip.status === 'incorrect') {
-            return (
-              <span key={i} onClick={() => revealChip(i)} className="rounded-lg px-3 py-1 text-sm font-medium bg-red-500/40 text-red-300 cursor-pointer hover:bg-red-500/60 transition-colors" title="Click to reveal">
-                {chip.typed}<span className="opacity-40">{DOT.repeat(chip.dotCount)}</span>
-              </span>
-            )
-          }
-          if (chip.status === 'active') {
-            return (
-              <span key={i} onClick={() => revealChip(i)} className="rounded-lg px-3 py-1 text-sm font-medium bg-yellow-400 text-gray-900 cursor-pointer hover:bg-yellow-300 transition-colors" title="Click to reveal">
-                {chip.typed}<span className="opacity-40">{DOT.repeat(chip.dotCount)}</span>
-              </span>
-            )
-          }
-          // Pending
-          const hintText = firstLetterIndices.has(i) && chip.display.length > 0
-            ? chip.display[0] + DOT.repeat(Math.max(0, chip.dotCount - 1))
-            : DOT.repeat(chip.dotCount)
-          return (
-            <span
-              key={i}
-              onClick={() => revealChip(i)}
-              className="rounded-lg px-3 py-1 text-sm font-medium bg-gray-700 text-gray-400 cursor-pointer hover:bg-gray-600 transition-colors select-none"
-              title="Click to reveal"
+          {/* Input */}
+          <div className={styles.inputWrap}>
+            <input
+              type="text"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              disabled={sentenceCompleted || !sentence}
+              placeholder={sentenceCompleted ? 'Completed — press Next →' : 'Type what you hear…'}
+              autoFocus
+              ref={inputRef}
+              className={[
+                styles.typeInput,
+                sentenceCompleted ? styles.typeInputComplete : '',
+              ].join(' ')}
+            />
+          </div>
+
+          {/* Translation — space reserved so toggling doesn't shift layout */}
+          {sentenceCompleted && (
+            <p
+              className={styles.translation}
+              style={{ visibility: showTranslation ? 'visible' : 'hidden' }}
             >
-              {hintText}
-            </span>
-          )
-        })}
-        {sentenceCompleted && (
-          <span className="self-center text-sm text-green-400">✓ Completed</span>
-        )}
-      </div>
+              {sentence?.translation ?? 'Translation not available'}
+            </p>
+          )}
 
-      {/* Proper noun chips (AC-103-4) */}
-      {sentence?.named_entities && sentence.named_entities.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {sentence.named_entities.map((name, i) => (
-            <span key={i} className="rounded-lg border border-orange-500/40 bg-orange-500/10 px-3 py-1 text-xs font-medium text-orange-300">
-              {name}
-            </span>
-          ))}
-        </div>
-      )}
+          {/* Controls */}
+          <div className={styles.controls}>
+            <div className={styles.controlsLeft}>
+              <button
+                className={styles.ctl}
+                onMouseDown={e => e.preventDefault()}
+                onClick={replay}
+                title="Replay (Ctrl + R)"
+              >
+                <RotateIcon /> Replay <kbd className={styles.ctlKbd}>⌃R</kbd>
+              </button>
 
-      {/* Input */}
-      <input
-        type="text"
-        value={input}
-        onChange={e => setInput(e.target.value)}
-        disabled={sentenceCompleted || !sentence}
-        placeholder={sentenceCompleted ? 'Completed — press Next →' : 'Type what you hear…'}
-        autoFocus
-        className="w-full rounded-xl border border-gray-600 bg-gray-800 px-4 py-3 text-base text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none disabled:opacity-50"
-      />
+              <button
+                className={[styles.ctl, hasFirstLetterHint ? styles.ctlGold : ''].join(' ')}
+                onMouseDown={e => e.preventDefault()}
+                onClick={activateFirstLetter}
+                title="Reveal first letter (Alt + H)"
+              >
+                <SparklesIcon /> 1st letter <kbd className={styles.ctlKbd}>⌥H</kbd>
+              </button>
 
-      {/* Translation (AC-104-1, AC-104-2, AC-104-3) */}
-      {showTranslation && sentence && sentenceCompleted && (
-        <p className="text-sm text-gray-500 italic">
-          {sentence.translation ?? 'Translation not available'}
-        </p>
-      )}
+              {sentence && (
+                <button
+                  className={[styles.ctl, isSaved ? styles.ctlSave : ''].join(' ')}
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => toggleSave(sentence.id)}
+                  title="Save sentence (Ctrl + S)"
+                >
+                  <BookmarkIcon filled={isSaved} />
+                  {isSaved ? 'Saved' : 'Save'} <kbd className={styles.ctlKbd}>⌃S</kbd>
+                </button>
+              )}
+            </div>
 
-      {/* Controls */}
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          onMouseDown={e => e.preventDefault()}
-          onClick={replay}
-          className="rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
-          title="Ctrl+R"
-        >
-          Replay
-        </button>
+            <button
+              className={[styles.ctl, styles.ctlPrimary].join(' ')}
+              onMouseDown={e => e.preventDefault()}
+              onClick={tryAdvance}
+              title={isLast ? 'Finish (Enter)' : 'Next sentence (Enter)'}
+            >
+              {isLast ? 'Done' : 'Next'} <ArrowRightIcon />
+              <kbd className={[styles.ctlKbd, styles.ctlPrimaryKbd].join(' ')}>↵</kbd>
+            </button>
+          </div>
 
-        <button
-          onMouseDown={e => e.preventDefault()}
-          onClick={activateFirstLetter}
-          className={`rounded-lg border px-4 py-2 text-sm transition-colors ${
-            firstLetterIndices.size > 0
-              ? 'border-yellow-500/60 bg-yellow-500/10 text-yellow-400'
-              : 'border-gray-600 text-gray-300 hover:bg-gray-700'
-          }`}
-          title="Alt+H"
-        >
-          1st letter
-        </button>
-
-        {sentence && (
-          <button
-            onMouseDown={e => e.preventDefault()}
-            onClick={() => toggleSave(sentence.id)}
-            className={`rounded-lg border px-4 py-2 text-sm transition-colors ${
-              savedIds.has(sentence.id)
-                ? 'border-blue-500/60 bg-blue-500/10 text-blue-400'
-                : 'border-gray-600 text-gray-300 hover:bg-gray-700'
-            }`}
-            title="Save sentence"
-          >
-            {savedIds.has(sentence.id) ? '🔖 Saved' : '🔖 Save'}
-          </button>
-        )}
-
-        <button
-          onMouseDown={e => e.preventDefault()}
-          onClick={tryAdvance}
-          disabled={!sentence || (isLast && sentenceCompleted)}
-          className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-40"
-        >
-          {isLast && sentenceCompleted ? 'Done' : 'Next →'}
-        </button>
-
-        <div className="ml-auto flex items-center gap-3">
-          <button
-            onMouseDown={e => e.preventDefault()}
-            onClick={toggleTranslation}
-            className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
-          >
-            {showTranslation ? 'Hide translation' : 'Show translation'}
-          </button>
+          {/* Translation toggle — own row below controls */}
+          <div className={styles.transRow}>
+            <button
+              className={[styles.ctl, styles.ctlGhost].join(' ')}
+              onMouseDown={e => e.preventDefault()}
+              onClick={toggleTranslation}
+            >
+              {showTranslation ? 'Hide translation' : 'Show translation'}
+            </button>
+          </div>
 
         </div>
-      </div>
-    </div>
-    </main>
+      </main>
 
+      {/* Toast */}
       {saveToast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-gray-600 bg-gray-800 px-4 py-3 text-sm font-medium text-gray-100 shadow-xl">
-          {saveToast}
+        <div className={styles.toast} key={saveToast}>
+          <BookmarkIcon filled={false} /> {saveToast}
         </div>
       )}
     </div>
