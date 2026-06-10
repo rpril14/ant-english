@@ -62,3 +62,7 @@ As Alex, I want to type what I hear sentence by sentence and see which words I g
 ## Proof Status
 
 unit: yes | integration: yes | e2e: no | platform: no
+
+## Evidence
+
+- 2026-06-10: Migrated integration test infrastructure from EF Core InMemory to real Postgres via docker-compose.test.yml (port 5433) + Respawn. One shared DB for all test classes; Respawn resets data before each test.

@@ -62,3 +62,4 @@ unit: yes | integration: yes | e2e: no | platform: no
 ## Evidence
 
 - 2026-06-07: Added integration coverage for duplicate queued imports linking the current user and unowned job status returning 404.
+- 2026-06-10: Migrated integration test infrastructure from EF Core InMemory to real Postgres via docker-compose.test.yml (port 5433) + Respawn. One shared DB for all test classes; Respawn resets data before each test.

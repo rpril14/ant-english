@@ -40,3 +40,4 @@ unit: yes | integration: yes | e2e: no | platform: no
 ## Evidence
 
 - 2026-06-10: Added 8 integration tests (`SavedController_test.cs`) covering GET saved (with data isolation), save, duplicate save (409), remove, and update note. 57/57 tests pass.
+- 2026-06-10: Replaced EF Core InMemory with real Postgres via docker-compose.test.yml (port 5433) + Respawn. Testcontainers removed.

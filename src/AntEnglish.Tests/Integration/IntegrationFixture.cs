@@ -14,7 +14,6 @@ using NSubstitute;
 using Respawn;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
-using Testcontainers.PostgreSql;
 
 namespace AntEnglish.Tests.Integration;
 
@@ -23,9 +22,10 @@ public class IntegrationCollection : ICollectionFixture<IntegrationFixture> { }
 
 public class IntegrationFixture : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
+    // Override with ANTENG_TEST_DB env var in CI or non-default local setups
+    private static readonly string ConnectionString =
+        Environment.GetEnvironmentVariable("ANTENG_TEST_DB")
+        ?? "Host=localhost;Port=5433;Database=anteng_test;Username=postgres;Password=postgres";
 
     private Respawner _respawner = null!;
 
@@ -33,14 +33,11 @@ public class IntegrationFixture : WebApplicationFactory<Program>, IAsyncLifetime
 
     async Task IAsyncLifetime.InitializeAsync()
     {
-        await _container.StartAsync();
-
-        // Access Services to trigger host build (ConfigureWebHost runs here, using the now-running container)
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AntDbContext>();
         await db.Database.EnsureCreatedAsync();
 
-        await using var conn = new NpgsqlConnection(_container.GetConnectionString());
+        await using var conn = new NpgsqlConnection(ConnectionString);
         await conn.OpenAsync();
         _respawner = await Respawner.CreateAsync(conn, new RespawnerOptions
         {
@@ -49,15 +46,11 @@ public class IntegrationFixture : WebApplicationFactory<Program>, IAsyncLifetime
         });
     }
 
-    async Task IAsyncLifetime.DisposeAsync()
-    {
-        Dispose();
-        await _container.DisposeAsync();
-    }
+    async Task IAsyncLifetime.DisposeAsync() => Dispose();
 
     public async Task ResetAsync()
     {
-        await using var conn = new NpgsqlConnection(_container.GetConnectionString());
+        await using var conn = new NpgsqlConnection(ConnectionString);
         await conn.OpenAsync();
         await _respawner.ResetAsync(conn);
     }
@@ -70,7 +63,7 @@ public class IntegrationFixture : WebApplicationFactory<Program>, IAsyncLifetime
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Supabase:Url"] = "https://test.supabase.co",
-                ["ConnectionStrings:DefaultConnection"] = _container.GetConnectionString(),
+                ["ConnectionStrings:DefaultConnection"] = ConnectionString,
             });
         });
         builder.ConfigureServices(services =>
@@ -81,7 +74,7 @@ public class IntegrationFixture : WebApplicationFactory<Program>, IAsyncLifetime
                 .ToList();
             foreach (var d in toRemove) services.Remove(d);
 
-            services.AddAntEnglishData(_container.GetConnectionString());
+            services.AddAntEnglishData(ConnectionString);
 
             var ytDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IYouTubeService));
             if (ytDescriptor != null) services.Remove(ytDescriptor);

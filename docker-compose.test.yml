@@ -1,0 +1,9 @@
+services:
+  db-test:
+    image: postgres:16-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: anteng_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
