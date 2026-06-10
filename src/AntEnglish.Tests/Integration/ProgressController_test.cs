@@ -1,9 +1,6 @@
 using AntEnglish.Data;
 using AntEnglish.Data.Entities;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Headers;
@@ -11,20 +8,22 @@ using System.Net.Http.Json;
 
 namespace AntEnglish.Tests.Integration;
 
-public class ProgressController_test : IClassFixture<ProgressControllerFixture>
+[Collection("Integration")]
+public class ProgressController_test : IAsyncLifetime
 {
+    private readonly IntegrationFixture _fixture;
     private readonly HttpClient _client;
-    private readonly ProgressControllerFixture _fixture;
-
-    // Fixed user ID injected by TestAuthHandler
     private static readonly Guid TestUserId = new("00000000-0000-0000-0000-000000000001");
 
-    public ProgressController_test(ProgressControllerFixture fixture)
+    public ProgressController_test(IntegrationFixture fixture)
     {
         _fixture = fixture;
         _client = fixture.CreateClient();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
     }
+
+    public async Task InitializeAsync() => await _fixture.ResetAsync();
+    public Task DisposeAsync() => Task.CompletedTask;
 
     // ── POST /api/progress ────────────────────────────────────────────────────
 
@@ -186,37 +185,4 @@ public class ProgressController_test : IClassFixture<ProgressControllerFixture>
         int? Score,
         int HintLevelUsed,
         DateTimeOffset? CompletedAt);
-}
-
-public class ProgressControllerFixture : WebApplicationFactory<Program>
-{
-    private static readonly Microsoft.EntityFrameworkCore.Storage.InMemoryDatabaseRoot _dbRoot = new();
-
-    protected override void ConfigureWebHost(IWebHostBuilder builder)
-    {
-        builder.UseEnvironment("Testing");
-        builder.ConfigureAppConfiguration((_, config) =>
-        {
-            config.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Supabase:Url"] = "https://test.supabase.co",
-                ["ConnectionStrings:DefaultConnection"] = "DataSource=:memory:",
-            });
-        });
-        builder.ConfigureServices(services =>
-        {
-            var toRemove = services
-                .Where(d => d.ServiceType == typeof(DbContextOptions<AntDbContext>)
-                         || d.ServiceType == typeof(AntDbContext))
-                .ToList();
-            foreach (var d in toRemove) services.Remove(d);
-
-            services.AddDbContext<AntDbContext>(options =>
-                options.UseInMemoryDatabase("ProgressTestDb", _dbRoot));
-
-            services.AddAuthentication("Test")
-                .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions,
-                    TestAuthHandler>("Test", _ => { });
-        });
-    }
 }

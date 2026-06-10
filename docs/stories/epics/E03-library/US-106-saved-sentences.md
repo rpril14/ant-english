@@ -35,4 +35,8 @@ As Sara, I want to bookmark sentences I find difficult, so that I can review the
 
 ## Proof Status
 
-unit: yes | integration: no | e2e: no | platform: no
+unit: yes | integration: yes | e2e: no | platform: no
+
+## Evidence
+
+- 2026-06-10: Added 8 integration tests (`SavedController_test.cs`) covering GET saved (with data isolation), save, duplicate save (409), remove, and update note. 57/57 tests pass.

@@ -1,42 +1,33 @@
 using AntEnglish.Data;
 using AntEnglish.Data.Entities;
 using AntEnglish.Services.Interfaces;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using NSubstitute;
+using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Security.Claims;
-using System.Text.Encodings.Web;
-using Microsoft.EntityFrameworkCore.InMemory.Infrastructure.Internal;
-using Microsoft.Extensions.Configuration;
 
 namespace AntEnglish.Tests.Integration;
 
-/// <summary>
-/// Spins up the real ASP.NET pipeline with an in-memory DB and mocked external services.
-/// JWT auth is disabled so tests can focus on controller logic.
-/// </summary>
-public class ImportController_test : IClassFixture<ImportControllerFixture>
+[Collection("Integration")]
+public class ImportController_test : IAsyncLifetime
 {
+    private readonly IntegrationFixture _fixture;
     private readonly HttpClient _client;
-    private readonly ImportControllerFixture _fixture;
     private static readonly Guid TestUserId = new("00000000-0000-0000-0000-000000000001");
 
-    public ImportController_test(ImportControllerFixture fixture)
+    public ImportController_test(IntegrationFixture fixture)
     {
         _fixture = fixture;
         _client = fixture.CreateClient();
-        // Inject a fake JWT so [Authorize] passes
-        _client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Test");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
     }
+
+    public async Task InitializeAsync() => await _fixture.ResetAsync();
+    public Task DisposeAsync() => Task.CompletedTask;
+
+    // ── POST /api/videos/import ───────────────────────────────────────────────
 
     [Fact]
     public async Task Import_InvalidUrl_Returns400WithMessage()
@@ -190,7 +181,6 @@ public class ImportController_test : IClassFixture<ImportControllerFixture>
         var req = new { url = $"https://youtu.be/{youtubeId}" };
         await _client.PostAsJsonAsync("/api/videos/import", req);
 
-        // Update status to "ready" in the same in-memory DB the HTTP pipeline uses
         using (var scope = _fixture.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AntDbContext>();
@@ -239,67 +229,4 @@ public class ImportController_test : IClassFixture<ImportControllerFixture>
 
     private record ErrorBody(string Message);
     private record ImportBody(Guid JobId, Guid? VideoId, string Status);
-}
-
-public class ImportControllerFixture : WebApplicationFactory<Program>
-{
-    public IYouTubeService YouTube { get; } = Substitute.For<IYouTubeService>();
-    private static readonly Microsoft.EntityFrameworkCore.Storage.InMemoryDatabaseRoot _dbRoot = new();
-
-    protected override void ConfigureWebHost(IWebHostBuilder builder)
-    {
-        builder.UseEnvironment("Testing");
-        builder.ConfigureAppConfiguration((_, config) =>
-        {
-            config.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Supabase:Url"] = "https://test.supabase.co",
-                ["ConnectionStrings:DefaultConnection"] = "DataSource=:memory:",
-            });
-        });
-        builder.ConfigureServices(services =>
-        {
-            // Remove all AntDbContext and DbContextOptions registrations so AddDbContext below wins
-            var toRemove = services
-                .Where(d => d.ServiceType == typeof(DbContextOptions<AntDbContext>)
-                         || d.ServiceType == typeof(AntDbContext))
-                .ToList();
-            foreach (var d in toRemove) services.Remove(d);
-
-            services.AddDbContext<AntDbContext>(options =>
-                options.UseInMemoryDatabase("TestDb", _dbRoot));
-
-            // Replace real YouTube service with mock
-            var ytDescriptor = services.SingleOrDefault(d =>
-                d.ServiceType == typeof(IYouTubeService));
-            if (ytDescriptor != null) services.Remove(ytDescriptor);
-            services.AddSingleton(YouTube);
-
-            // Replace JWT with a test scheme that always authenticates as a fixed user
-            services.AddAuthentication("Test")
-                .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
-        });
-    }
-}
-
-public class TestAuthHandler(
-    IOptionsMonitor<AuthenticationSchemeOptions> options,
-    ILoggerFactory logger,
-    UrlEncoder encoder) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
-{
-    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
-    {
-        if (!Request.Headers.ContainsKey("Authorization"))
-            return Task.FromResult(AuthenticateResult.NoResult());
-
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.NameIdentifier, "00000000-0000-0000-0000-000000000001"),
-            new Claim("sub", "00000000-0000-0000-0000-000000000001"),
-        };
-        var identity = new ClaimsIdentity(claims, "Test");
-        var principal = new ClaimsPrincipal(identity);
-        var ticket = new AuthenticationTicket(principal, "Test");
-        return Task.FromResult(AuthenticateResult.Success(ticket));
-    }
 }

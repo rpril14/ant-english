@@ -25,7 +25,7 @@ As Alex, I want to see all my saved videos, track progress, and filter by status
 
 **AC-105-6 — Custom tags**: add tag → pill on card + filter option
 
-**AC-105-7 — Remove from library**: deletes `user_videos` row only; shared rows unaffected
+**AC-105-7 — Remove from library**: deletes user's `user_videos`, `user_progress`, and `saved_sentences` rows for that video; shared `videos` and `sentences` rows unaffected
 
 **AC-105-8 — Import bar always visible**: pinned at bottom
 
@@ -42,9 +42,10 @@ As Alex, I want to see all my saved videos, track progress, and filter by status
 
 ## Proof Status
 
-unit: yes | integration: no | e2e: no | platform: no
+unit: yes | integration: yes | e2e: no | platform: no
 
 ## Evidence
 
 - 2026-06-07: Fixed `GET /api/library` runtime failure by ordering `user_videos` before projecting to `LibraryItem`; `dotnet test src\AntEnglish.sln` passed 42/42.
 - 2026-06-08: Redesigned `LibraryClient.tsx` with warm paper theme (from Claude Design handoff). Added Duration and A–Z sort options (`SortId` extended in `library.ts`; `applySort` updated). Added "Saved" shortcut action on each card. Switched UI language to English throughout (`LibraryClient.tsx`, `ImportBar.tsx`). All 19 library unit tests pass.
+- 2026-06-10: Added 7 integration tests (`LibraryController_test.cs`) covering GET library, favourite toggle, and remove. Fixed `LibraryService.RemoveAsync` to pre-fetch sentence IDs instead of navigating through `Sentence.VideoId` in `ExecuteDeleteAsync` — eliminates InMemory provider incompatibility. Corrected product doc and AC-105-7 to reflect cascade-delete of `user_progress` and `saved_sentences`. 57/57 tests pass.

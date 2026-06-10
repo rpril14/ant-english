@@ -44,7 +44,8 @@ Filter pills: All, Learning, Done, Favorites.
 
 ## Remove from Library
 
-- Deletes `user_videos` row only.
+- Deletes the user's `user_videos` row.
+- Cascade-deletes the user's `user_progress` and `saved_sentences` rows for sentences in that video.
 - Shared `videos` and `sentences` rows remain (other users unaffected).
 
 ## Realtime Card Updates
